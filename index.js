@@ -7,11 +7,53 @@
 
 const puppeteer = require('puppeteer');
 
+const elemSimpleProperties = {
+	htmlTagName: { type: null },
+	backgroundColor: { type: null },
+	color: { type: null },
+	fontFamily: { type: null },
+	fontSize: { type: 'float' },
+	fontStyle: { type: 'float' },
+	fontWeight: { type: 'float' },
+	lineThrough: { type: 'float' },
+	underline: { type: 'float' },
+	positionX: { type: 'float' },
+	positionY: { type: 'float' },
+	width: { type: 'float' },
+	height: { type: 'float' },
+	visualX: { type: 'float' },
+	visualY: { type: 'float' },
+	visualWidth: { type: 'float' },
+	visualHeight: { type: 'float' }
+};
+
+function outputProperty(namespace, name, value, type) {
+	let ret = '    ';
+	ret += namespace + ':' + name;
+	ret += ' "' + value + '"';
+	if (type !== null)
+		ret += '^^xsd:type';
+	console.log(ret)
+}
+
+function formatElement(elem) {
+
+	console.log(elem);
+	
+	Object.getOwnPropertyNames(elem).forEach((name) => {
+		if (elemSimpleProperties.hasOwnProperty(name)) {
+			outputProperty('box', name, elem[name], null);
+		}
+	});
+
+
+}
+
 
 (async () => {
 	const browser = await puppeteer.launch({
 		headless: false,
-		slowMo: 250,
+		//slowMo: 250,
 		args: [`--window-size=1600,1200`],
 		defaultViewport: null
 	});
@@ -21,7 +63,48 @@ const puppeteer = require('puppeteer');
 
 	let root = await page.evaluate(() => {
 
+		function pixels(value)
+		{
+			return (value.endsWith('px')) ? value.substr(0, value.length-2) : value;
+		}
+
+		function fontWeight(value)
+		{
+			if (value !== null ) {
+				switch (value)
+				{
+					case "bold":
+						return 1.0;
+					case "normal":
+						return 0.0;
+					default:
+						let num = parseInt(value);
+						return value > 400 ? 1.0 : 0.0;
+				}
+			} else {
+				return 0.0;
+			}
+		}
+
+		function fontStyle(value)
+		{
+			if (value !== null ) {
+				switch (value)
+				{
+					case "italic":
+					case "oblique":
+						return 1.0;
+					default:
+						return 0.0;
+				}
+			} else {
+				return 0.0;
+			}
+		}
+
 		class BoxSource {
+
+			idcnt = 0;
 
 			constructor(document, domRoot) {
 				this.document = document;
@@ -40,16 +123,18 @@ const puppeteer = require('puppeteer');
 
 			processSubtree(root) {
 				if (root.nodeType == Node.ELEMENT_NODE) {
-					var ret = new ElementBox(root);
+					let ret = new ElementBox(root);
 					for (var i = 0; i < root.childNodes.length; i++) {
 						var child = this.processSubtree(root.childNodes.item(i));
 						if (child != null && child.displayType != 'none')
 							ret.addChild(child);
 					}
+					ret.id = this.idcnt++;
 					return ret;
 				}
 				else if (root.nodeType == Node.TEXT_NODE && root.nodeValue.trim().length > 0) {
-					var ret = new TextBox(root);
+					let ret = new TextBox(root);
+					ret.id = this.idcnt++;
 					return ret;
 				}
 				else
@@ -64,7 +149,7 @@ const puppeteer = require('puppeteer');
 		class ElementBox {
 
 			constructor(elem) {
-				this.tagName = elem.nodeName;
+				this.htmlTagName = elem.nodeName;
 				this.attrs = {};
 				if (elem.hasAttributes()) {
 					var attmap = elem.attributes;
@@ -77,9 +162,9 @@ const puppeteer = require('puppeteer');
 				this.backgroundColor = style.backgroundColor;
 				this.decoration = style.textDecoration;
 				this.fontFamily = style.fontFamily;
-				this.fontSize = style.fontSize;
-				this.fontStyle = style.fontStyle;
-				this.fontWeight = style.fontWeight;
+				this.fontSize = pixels(style.fontSize);
+				this.fontStyle = fontStyle(style.fontStyle);
+				this.fontWeight = fontWeight(style.fontWeight);
 				this.bounds = [elem.offsetLeft, elem.offsetTop, elem.offsetWidth, elem.offsetHeight];
 				this.margin = [style.marginTop, style.marginRight, style.marginBottom, style.marginLeft];
 				this.padding = [style.paddingTop, style.paddingRight, style.paddingBottom, style.paddingLeft];
@@ -114,6 +199,6 @@ const puppeteer = require('puppeteer');
 
 	await browser.close();
 
-	console.log(root);
+	formatElement(root);
 
 })();
