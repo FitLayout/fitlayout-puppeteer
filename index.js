@@ -7,48 +7,12 @@
 
 const puppeteer = require('puppeteer');
 
-const elemSimpleProperties = {
-	htmlTagName: { type: null },
-	backgroundColor: { type: null },
-	color: { type: null },
-	fontFamily: { type: null },
-	fontSize: { type: 'float' },
-	fontStyle: { type: 'float' },
-	fontWeight: { type: 'float' },
-	lineThrough: { type: 'float' },
-	underline: { type: 'float' },
-	positionX: { type: 'float' },
-	positionY: { type: 'float' },
-	width: { type: 'float' },
-	height: { type: 'float' },
-	visualX: { type: 'float' },
-	visualY: { type: 'float' },
-	visualWidth: { type: 'float' },
-	visualHeight: { type: 'float' }
-};
-
-function outputProperty(namespace, name, value, type) {
-	let ret = '    ';
-	ret += namespace + ':' + name;
-	ret += ' "' + value + '"';
-	if (type !== null)
-		ret += '^^xsd:type';
-	console.log(ret)
+function outputBox(out, box) {
+	let css = box.css + ' ';
+	css = css.replace(/\"/g,'\'');
+	let text = box.text || '&nbsp;';
+	out.write(`<div data-tag="${box.tagName}" style="${css}">${text}</div>\n`);
 }
-
-function formatElement(elem) {
-
-	console.log(elem);
-	
-	Object.getOwnPropertyNames(elem).forEach((name) => {
-		if (elemSimpleProperties.hasOwnProperty(name)) {
-			outputProperty('box', name, elem[name], null);
-		}
-	});
-
-
-}
-
 
 (async () => {
 	const browser = await puppeteer.launch({
@@ -58,147 +22,272 @@ function formatElement(elem) {
 		defaultViewport: null
 	});
 	const page = await browser.newPage();
-	await page.goto('https://www.fit.vut.cz/study/courses/');
+	//await page.goto('https://www.fit.vut.cz/study/courses/');
+	await page.goto('https://www.idnes.cz/technet/software/bezpecnostni-chyba-prohlizec-google-chrome-instalujte-aktualizaci.A201104_174236_software_nyv');
 	page.on('console', msg => console.log('PAGE LOG:', msg.text()));
 
-	let root = await page.evaluate(() => {
+	let pg = await page.evaluate(() => {
 
-		function pixels(value)
-		{
-			return (value.endsWith('px')) ? value.substr(0, value.length-2) : value;
+		/*=lines.js=*/
+/*
+ * Line detection in a displayed web page.
+ * (c) 2020 Radek Burget <burgetr@fit.vutbr.cz>
+ * 
+ * Inspired by a solution by Juan Mendes
+ * https://stackoverflow.com/questions/27915469/how-to-split-an-html-paragraph-up-into-its-lines-of-text-with-javascript 
+ */
+
+function fitlayoutDetectLines() {
+
+	var TEXT_CONT = "XX";
+	var LINE_CONT = "XLINE";
+	var WORD_CONT = "XW";
+
+	/**
+	 * Finds lines in a given element and marks them with separate elements.
+	 * @param {Element} p 
+	 */
+	function createLines(p) {
+		splitWords(p);
+		var parent = p.parentElement;
+		var lines = getLines(p);
+		var ltext = lines.map(function (line) {
+			return line.map(function (span) {
+				return span.innerText;
+			}).join(' ')
+		});
+		if (ltext.length == 0) {
+			//may this happen? do nothing.
+		} else if (ltext.length == 1) {
+			p.innerText = ltext[0];
+		} else {
+			p.innerText = '';
+			for (var i = 0; i < ltext.length; i++) {
+				var lelem = document.createElement(LINE_CONT);
+				lelem.innerText = ltext[i] + ' '; //to allow line brek after
+				parent.insertBefore(lelem, p);
+			}
+			parent.removeChild(p);
 		}
+		return ltext.length;
+	}
 
-		function fontWeight(value)
-		{
-			if (value !== null ) {
-				switch (value)
-				{
-					case "bold":
-						return 1.0;
-					case "normal":
-						return 0.0;
-					default:
-						let num = parseInt(value);
-						return value > 400 ? 1.0 : 0.0;
-				}
+	/**
+	 * Replaces words in a given element by XWORD elements.
+	 */
+	function splitWords(p) {
+		p.innerHTML = p.innerText.split(/\s/).map(function (word) {
+			return '<' + WORD_CONT + '>' + word + '</' + WORD_CONT + '>'
+		}).join(' ');
+	}
+
+	/**
+	 * Compares the positions of words in a given element and splits the words to lines.
+	 * @param {Element} p the element to be processed.
+	 */
+	function getLines(p) {
+		var lines = [];
+		var line;
+		var words = p.getElementsByTagName(WORD_CONT);
+		var lastTop;
+		for (var i = 0; i < words.length; i++) {
+			var word = words[i];
+			if (word.offsetTop != lastTop) {
+				lastTop = word.offsetTop;
+				line = [];
+				lines.push(line);
+			}
+			line.push(word);
+		}
+		return lines;
+	}
+
+	function isVisibleElement(e) {
+		if (e.nodeType == Node.ELEMENT_NODE) {
+			var cs = window.getComputedStyle(e, null);
+			if (cs != null && cs.display === 'none') {
+				return false;
+			}
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Replaces text nodes with XX elements to avoid mixed content.
+	 * @param {Element} p the root element of the subtree to process.
+	 */
+	function unmix(p) {
+		var children = p.childNodes;
+		var replace = [];
+		for (var i = 0; i < children.length; i++) {
+			var child = children.item(i);
+			if (child.nodeType == Node.TEXT_NODE && child.nodeValue.trim().length > 0) {
+				var newchild = document.createElement(TEXT_CONT);
+				newchild.appendChild(document.createTextNode(child.nodeValue));
+				replace.push(newchild);
 			} else {
-				return 0.0;
-			}
-		}
-
-		function fontStyle(value)
-		{
-			if (value !== null ) {
-				switch (value)
-				{
-					case "italic":
-					case "oblique":
-						return 1.0;
-					default:
-						return 0.0;
+				replace.push(null);
+				if (isVisibleElement(child)) {
+					unmix(child);
 				}
-			} else {
-				return 0.0;
 			}
 		}
-
-		class BoxSource {
-
-			idcnt = 0;
-
-			constructor(document, domRoot) {
-				this.document = document;
-				this.domRoot = domRoot;
-			}
-
-			//=================================================================================================
-			// DOM transformation
-			//=================================================================================================
-            /**
-            * Creates the box tree and returns its root node.
-            */
-			getBoxTree() {
-				return this.processSubtree(this.domRoot);
-			}
-
-			processSubtree(root) {
-				if (root.nodeType == Node.ELEMENT_NODE) {
-					let ret = new ElementBox(root);
-					for (var i = 0; i < root.childNodes.length; i++) {
-						var child = this.processSubtree(root.childNodes.item(i));
-						if (child != null && child.displayType != 'none')
-							ret.addChild(child);
-					}
-					ret.id = this.idcnt++;
-					return ret;
-				}
-				else if (root.nodeType == Node.TEXT_NODE && root.nodeValue.trim().length > 0) {
-					let ret = new TextBox(root);
-					ret.id = this.idcnt++;
-					return ret;
-				}
-				else
-					return null;
+		for (var i = 0; i < replace.length; i++) {
+			if (replace[i] != null) {
+				p.replaceChild(replace[i], children.item(i));
 			}
 		}
+	}
 
-		//=================================================================================================
-		// ElementBox
-		//=================================================================================================
-
-		class ElementBox {
-
-			constructor(elem) {
-				this.htmlTagName = elem.nodeName;
-				this.attrs = {};
-				if (elem.hasAttributes()) {
-					var attmap = elem.attributes;
-					for (var i = 0; i < attmap.length; i++)
-						this.attrs[attmap[i].name] = attmap[i].value;
-				}
-				var style = window.getComputedStyle(elem, null);
-				this.displayType = style.display;
-				this.color = style.color;
-				this.backgroundColor = style.backgroundColor;
-				this.decoration = style.textDecoration;
-				this.fontFamily = style.fontFamily;
-				this.fontSize = pixels(style.fontSize);
-				this.fontStyle = fontStyle(style.fontStyle);
-				this.fontWeight = fontWeight(style.fontWeight);
-				this.bounds = [elem.offsetLeft, elem.offsetTop, elem.offsetWidth, elem.offsetHeight];
-				this.margin = [style.marginTop, style.marginRight, style.marginBottom, style.marginLeft];
-				this.padding = [style.paddingTop, style.paddingRight, style.paddingBottom, style.paddingLeft];
-				this.border = [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth];
-				this.borderColor = [style.borderTopColor, style.borderRightColor, style.borderBottomColor, style.borderLeftColor];
-				this.children = [];
-			}
-
-			addChild(child) {
-				this.children[this.children.length] = child;
+	/**
+	 * Checks if a given XX element is necessary and removes it when it is not.
+	 * @param {Element} p the XX element to be considered
+	 */
+	function flatten(p) {
+		var children = p.parentElement.childNodes;
+		var cnt = 0;
+		for (var i = 0; i < children.length; i++) {
+			var child = children.item(i);
+			if (child.nodeType == Node.ELEMENT_NODE) {
+				cnt++;
 			}
 		}
-
-
-		//=================================================================================================
-		// TextBox
-		//=================================================================================================
-
-		class TextBox {
-			constructor(node) {
-				//this.sourceNode = textNode;
-				this.text = node.textContent;
-			}
+		if (cnt == 1) {
+			p.parentElement.innerText = p.innerText;
 		}
+	}
 
-		// This code runs in the browser
-		var bs = new BoxSource(document, document.documentElement);
-		var ret = bs.getBoxTree();
+	unmix(document.body);
+	var xxs = Array.from(document.getElementsByTagName(TEXT_CONT));
+	for (var i = 0; i < xxs.length; i++) {
+		var n = createLines(xxs[i]);
+		if (n === 0) {
+			console.log(xxs[i]);
+		}
+	}
+	xxs = Array.from(document.getElementsByTagName(TEXT_CONT));
+	for (var i = 0; i < xxs.length; i++) {
+		flatten(xxs[i]);
+	}
+}
+		/*=export.js=*/
+function fitlayoutExportBoxes() {
+
+	let styleProps = [
+		"color",
+		"background",
+		"font",
+		"text-decoration-line",
+		"border",
+		"margin",
+		"padding",
+		"overflow",
+		"transform"
+	];
+
+	function getPositionString(e) {
+		let ret = "position:absolute;";
+		let r = e.getBoundingClientRect();
+		const sx = window.scrollX;
+		const sy = window.scrollY;
+		ret += "top:" + (r.top + sy) + "px;";
+		ret += "left:" + (r.left + sx) + "px;";
+		ret += "width:" + r.width + "px;";
+		ret += "height:" + r.height + "px;";
 		return ret;
+	}
+
+	function createBox(e) {
+		let ret = {};
+		ret.tagName = e.tagName;
+
+		let style = window.getComputedStyle(e, null);
+		let css = "";
+		styleProps.forEach((name) => {
+			css += name + ":" + style[name] + ";";
+		});
+
+		css += getPositionString(e);
+
+		ret.css = css;
+
+		return ret;
+	}
+
+	function isVisibleElement(e) {
+		if (e.nodeType === Node.ELEMENT_NODE && e.offsetParent !== null) {
+			var cs = window.getComputedStyle(e, null);
+			if (cs != null && cs.display === 'none' && cs.visibility === 'visible') {
+				return false;
+			}
+			return true;
+		}
+		return false;
+	}
+
+	function processBoxes(root, ret) {
+
+		if (isVisibleElement(root)) {
+			let box = createBox(root);
+			ret.push(box);
+
+			var children = root.childNodes;
+			for (var i = 0; i < children.length; i++) {
+				processBoxes(children[i], ret);
+			}
+			for (var i = 0; i < children.length; i++) {
+				if (children[i].nodeType === Node.TEXT_NODE && children[i].nodeValue.trim().length > 0) {
+					box.text = children[i].nodeValue;
+				}
+			}
+		}
+
+	}
+
+	let boxes = [];
+	processBoxes(document.body, boxes);
+
+	let ret = {
+		page: {
+			width: document.body.scrollWidth,
+			height: document.body.scrollHeight,
+			title: document.title
+		},
+		boxes: boxes
+	}
+
+	return ret;
+}
+
+		fitlayoutDetectLines();
+		return fitlayoutExportBoxes();
 
 	});
 
 	await browser.close();
 
-	formatElement(root);
+	let head = `
+		<!DOCTYPE html>
+		<head>
+			<title>${pg.page.title}</title>
+		</head>
+		<style>
+			* { box-sizing: border-box; white-space: nowrap; }
+		</style>
+		<body>
+		<div style="position:absolute;top:0;left:0;width:${pg.page.width}px;height:${pg.page.height}px;">
+	`;
+	let tail = `
+		</div>
+		</body>
+		</html>
+	`
+
+	process.stdout.write(head);
+	for (let i = 0; i < pg.boxes.length; i++) {
+		outputBox(process.stdout, pg.boxes[i]);
+	}	
+	process.stdout.write(tail);
 
 })();
