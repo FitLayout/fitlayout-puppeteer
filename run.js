@@ -7,13 +7,6 @@
 
 const puppeteer = require('puppeteer');
 
-function outputBox(out, box) {
-	let css = box.css + ' ';
-	css = css.replace(/\"/g,'\'');
-	let text = box.text || '&nbsp;';
-	out.write(`<div data-tag="${box.tagName}" style="${css}">${text}</div>\n`);
-}
-
 (async () => {
 	const browser = await puppeteer.launch({
 		headless: false,
@@ -38,27 +31,6 @@ function outputBox(out, box) {
 
 	await browser.close();
 
-	let head = `
-		<!DOCTYPE html>
-		<head>
-			<title>${pg.page.title}</title>
-		</head>
-		<style>
-			* { box-sizing: border-box; white-space: nowrap; }
-		</style>
-		<body>
-		<div style="position:absolute;top:0;left:0;width:${pg.page.width}px;height:${pg.page.height}px;">
-	`;
-	let tail = `
-		</div>
-		</body>
-		</html>
-	`
-
-	process.stdout.write(head);
-	for (let i = 0; i < pg.boxes.length; i++) {
-		outputBox(process.stdout, pg.boxes[i]);
-	}	
-	process.stdout.write(tail);
+	process.stdout.write(JSON.stringify(pg));
 
 })();

@@ -7,13 +7,6 @@
 
 const puppeteer = require('puppeteer');
 
-function outputBox(out, box) {
-	let css = box.css + ' ';
-	css = css.replace(/\"/g,'\'');
-	let text = box.text || '&nbsp;';
-	out.write(`<div data-tag="${box.tagName}" style="${css}">${text}</div>\n`);
-}
-
 (async () => {
 	const browser = await puppeteer.launch({
 		headless: false,
@@ -175,6 +168,7 @@ function fitlayoutDetectLines() {
 function fitlayoutExportBoxes() {
 
 	let styleProps = [
+		"display",
 		"color",
 		"background",
 		"font",
@@ -186,21 +180,22 @@ function fitlayoutExportBoxes() {
 		"transform"
 	];
 
-	function getPositionString(e) {
-		let ret = "position:absolute;";
-		let r = e.getBoundingClientRect();
-		const sx = window.scrollX;
-		const sy = window.scrollY;
-		ret += "top:" + (r.top + sy) + "px;";
-		ret += "left:" + (r.left + sx) + "px;";
-		ret += "width:" + r.width + "px;";
-		ret += "height:" + r.height + "px;";
-		return ret;
-	}
+	let nextId = 0;
+
 
 	function createBox(e) {
+		e.fitlayoutID = nextId++;
+
 		let ret = {};
+		ret.id = e.fitlayoutID;
 		ret.tagName = e.tagName;
+		ret.x = e.offsetTop;
+		ret.y = e.offsetLeft;
+		ret.width = e.offsetWidth;
+		ret.height = e.offsetHeight;
+		if (e.offsetParent !== null) {
+			ret.parent = e.offsetParent.fitlayoutID;
+		}
 
 		let style = window.getComputedStyle(e, null);
 		let css = "";
@@ -208,15 +203,13 @@ function fitlayoutExportBoxes() {
 			css += name + ":" + style[name] + ";";
 		});
 
-		css += getPositionString(e);
-
 		ret.css = css;
 
 		return ret;
 	}
 
 	function isVisibleElement(e) {
-		if (e.nodeType === Node.ELEMENT_NODE && e.offsetParent !== null) {
+		if (e.nodeType === Node.ELEMENT_NODE) {
 			var cs = window.getComputedStyle(e, null);
 			if (cs != null && cs.display === 'none' && cs.visibility === 'visible') {
 				return false;
@@ -267,27 +260,6 @@ function fitlayoutExportBoxes() {
 
 	await browser.close();
 
-	let head = `
-		<!DOCTYPE html>
-		<head>
-			<title>${pg.page.title}</title>
-		</head>
-		<style>
-			* { box-sizing: border-box; white-space: nowrap; }
-		</style>
-		<body>
-		<div style="position:absolute;top:0;left:0;width:${pg.page.width}px;height:${pg.page.height}px;">
-	`;
-	let tail = `
-		</div>
-		</body>
-		</html>
-	`
-
-	process.stdout.write(head);
-	for (let i = 0; i < pg.boxes.length; i++) {
-		outputBox(process.stdout, pg.boxes[i]);
-	}	
-	process.stdout.write(tail);
+	process.stdout.write(JSON.stringify(pg));
 
 })();

@@ -1,6 +1,7 @@
 function fitlayoutExportBoxes() {
 
 	let styleProps = [
+		"display",
 		"color",
 		"background",
 		"font",
@@ -12,29 +13,28 @@ function fitlayoutExportBoxes() {
 		"transform"
 	];
 
-	function getPositionString(e) {
-		let ret = "position:absolute;";
-		let r = e.getBoundingClientRect();
-		const sx = window.scrollX;
-		const sy = window.scrollY;
-		ret += "top:" + (r.top + sy) + "px;";
-		ret += "left:" + (r.left + sx) + "px;";
-		ret += "width:" + r.width + "px;";
-		ret += "height:" + r.height + "px;";
-		return ret;
-	}
+	let nextId = 0;
+
 
 	function createBox(e) {
+		e.fitlayoutID = nextId++;
+
 		let ret = {};
+		ret.id = e.fitlayoutID;
 		ret.tagName = e.tagName;
+		ret.x = e.offsetTop;
+		ret.y = e.offsetLeft;
+		ret.width = e.offsetWidth;
+		ret.height = e.offsetHeight;
+		if (e.offsetParent !== null) {
+			ret.parent = e.offsetParent.fitlayoutID;
+		}
 
 		let style = window.getComputedStyle(e, null);
 		let css = "";
 		styleProps.forEach((name) => {
 			css += name + ":" + style[name] + ";";
 		});
-
-		css += getPositionString(e);
 
 		ret.css = css;
 
