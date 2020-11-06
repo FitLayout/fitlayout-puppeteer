@@ -17,11 +17,96 @@ const puppeteer = require('puppeteer');
 	const page = await browser.newPage();
 	//await page.goto('https://www.fit.vut.cz/study/courses/');
 	await page.goto('https://www.idnes.cz/technet/software/bezpecnostni-chyba-prohlizec-google-chrome-instalujte-aktualizaci.A201104_174236_software_nyv');
-	page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+	//page.on('console', msg => console.log('PAGE LOG:', msg.text()));
 
 	let pg = await page.evaluate(() => {
 
-		/*=lines.js=*/
+		/*=jfont-checker.js=*/
+﻿﻿/**
+*
+*  JFont Checker
+*  Derek Leung
+*  Original Date: 2010.8.23
+*  Current: Feb 2016
+*  
+*  This piece of code checks for the existence of a specified font.
+*  It ultilizes the font fallback mechanism in CSS for font checking.
+*  
+*  Compatibility:
+*  Tested on Chrome, Firefox, IE9+
+*  Requires CSS and JS
+*  
+**/
+(function(){
+	var containerA, containerB, html = document.getElementsByTagName("html")[0],
+		filler = "random_words_#_!@#$^&*()_+mdvejreu_RANDOM_WORDS";
+
+	function createContainers(){
+		containerA = document.createElement("span");
+		containerB = document.createElement("span");
+
+		containerA.textContent = filler;
+		containerB.textContent = filler;
+
+		var styles = {
+			margin: "0",
+			padding: "0",
+			fontSize: "32px",
+			position: "absolute",
+			zIndex: "-1"
+		};
+
+		for(var key in styles){
+			if(styles.hasOwnProperty(key)){
+				containerA.style[key] = styles[key];
+				containerB.style[key] = styles[key];
+			}
+		}
+
+		return function(){
+			//clean up
+			containerA.outerHTML = "";
+			containerB.outerHTML = "";
+		};
+	}
+
+	function checkDimension(){
+		return containerA.offsetWidth === containerB.offsetWidth &&
+			   containerA.offsetHeight === containerB.offsetHeight;
+	}
+
+	function checkfont(font, DOM){
+		var rootEle = html;
+		if(DOM && DOM.children && DOM.children.length) rootEle = DOM.children[0];
+
+		var result = null,
+			reg = /[\,\.\/\;\'\[\]\`\<\>\\\?\:\"\{\}\|\~\!\@\#\$\%\^\&\*\(\)\-\=\_\+]/g,
+			cleanUp = createContainers();
+
+		font = font.replace(reg, "");
+
+		rootEle.appendChild(containerA);
+		rootEle.appendChild(containerB);
+
+		//First Check
+		containerA.style.fontFamily = font + ",monospace";
+		containerB.style.fontFamily = "monospace";
+
+		if(checkDimension()){
+		   	//Assume Arial exists, Second Check
+			containerA.style.fontFamily = font + ",Arial";
+			containerB.style.fontFamily = "Arial";
+			result = !checkDimension();
+		}else{
+			result = true;
+		}
+
+		cleanUp();
+		return result
+	}
+
+	this.checkfont = checkfont;
+})();		/*=lines.js=*/
 /*
  * Line detection in a displayed web page.
  * (c) 2020 Radek Burget <burgetr@fit.vutbr.cz>
@@ -183,7 +268,7 @@ function fitlayoutExportBoxes() {
 	let nextId = 0;
 
 
-	function createBox(e) {
+	function createBox(e, style) {
 		e.fitlayoutID = nextId++;
 
 		let ret = {};
@@ -197,7 +282,6 @@ function fitlayoutExportBoxes() {
 			ret.parent = e.offsetParent.fitlayoutID;
 		}
 
-		let style = window.getComputedStyle(e, null);
 		let css = "";
 		styleProps.forEach((name) => {
 			css += name + ":" + style[name] + ";";
@@ -205,6 +289,23 @@ function fitlayoutExportBoxes() {
 
 		ret.css = css;
 
+		return ret;
+	}
+
+	function addFonts(style, fontSet) {
+		let nameStr = style['font-family'];
+		nameStr.split(',').forEach((name) => {
+			fontSet.add(name.trim().replace(/['"]+/g, ''));
+		});
+	}
+
+	function getExistingFonts(fontSet) {
+		let ret = [];
+		fontSet.forEach((name) => {
+			if (checkfont(name)) {
+				ret.push(name);
+			}
+		});
 		return ret;
 	}
 
@@ -219,15 +320,17 @@ function fitlayoutExportBoxes() {
 		return false;
 	}
 
-	function processBoxes(root, ret) {
+	function processBoxes(root, boxList, fontSet) {
 
 		if (isVisibleElement(root)) {
-			let box = createBox(root);
-			ret.push(box);
+			let style = window.getComputedStyle(root, null);
+			let box = createBox(root, style);
+			boxList.push(box);
+			addFonts(style, fontSet);
 
 			var children = root.childNodes;
 			for (var i = 0; i < children.length; i++) {
-				processBoxes(children[i], ret);
+				processBoxes(children[i], boxList, fontSet);
 			}
 			for (var i = 0; i < children.length; i++) {
 				if (children[i].nodeType === Node.TEXT_NODE && children[i].nodeValue.trim().length > 0) {
@@ -239,7 +342,8 @@ function fitlayoutExportBoxes() {
 	}
 
 	let boxes = [];
-	processBoxes(document.body, boxes);
+	let fonts = new Set();
+	processBoxes(document.body, boxes, fonts);
 
 	let ret = {
 		page: {
@@ -247,6 +351,7 @@ function fitlayoutExportBoxes() {
 			height: document.body.scrollHeight,
 			title: document.title
 		},
+		fonts: getExistingFonts(fonts),
 		boxes: boxes
 	}
 

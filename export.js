@@ -16,7 +16,7 @@ function fitlayoutExportBoxes() {
 	let nextId = 0;
 
 
-	function createBox(e) {
+	function createBox(e, style) {
 		e.fitlayoutID = nextId++;
 
 		let ret = {};
@@ -30,7 +30,6 @@ function fitlayoutExportBoxes() {
 			ret.parent = e.offsetParent.fitlayoutID;
 		}
 
-		let style = window.getComputedStyle(e, null);
 		let css = "";
 		styleProps.forEach((name) => {
 			css += name + ":" + style[name] + ";";
@@ -38,6 +37,23 @@ function fitlayoutExportBoxes() {
 
 		ret.css = css;
 
+		return ret;
+	}
+
+	function addFonts(style, fontSet) {
+		let nameStr = style['font-family'];
+		nameStr.split(',').forEach((name) => {
+			fontSet.add(name.trim().replace(/['"]+/g, ''));
+		});
+	}
+
+	function getExistingFonts(fontSet) {
+		let ret = [];
+		fontSet.forEach((name) => {
+			if (checkfont(name)) {
+				ret.push(name);
+			}
+		});
 		return ret;
 	}
 
@@ -52,15 +68,17 @@ function fitlayoutExportBoxes() {
 		return false;
 	}
 
-	function processBoxes(root, ret) {
+	function processBoxes(root, boxList, fontSet) {
 
 		if (isVisibleElement(root)) {
-			let box = createBox(root);
-			ret.push(box);
+			let style = window.getComputedStyle(root, null);
+			let box = createBox(root, style);
+			boxList.push(box);
+			addFonts(style, fontSet);
 
 			var children = root.childNodes;
 			for (var i = 0; i < children.length; i++) {
-				processBoxes(children[i], ret);
+				processBoxes(children[i], boxList, fontSet);
 			}
 			for (var i = 0; i < children.length; i++) {
 				if (children[i].nodeType === Node.TEXT_NODE && children[i].nodeValue.trim().length > 0) {
@@ -72,7 +90,8 @@ function fitlayoutExportBoxes() {
 	}
 
 	let boxes = [];
-	processBoxes(document.body, boxes);
+	let fonts = new Set();
+	processBoxes(document.body, boxes, fonts);
 
 	let ret = {
 		page: {
@@ -80,6 +99,7 @@ function fitlayoutExportBoxes() {
 			height: document.body.scrollHeight,
 			title: document.title
 		},
+		fonts: getExistingFonts(fonts),
 		boxes: boxes
 	}
 

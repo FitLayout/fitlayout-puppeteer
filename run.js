@@ -17,10 +17,11 @@ const puppeteer = require('puppeteer');
 	const page = await browser.newPage();
 	//await page.goto('https://www.fit.vut.cz/study/courses/');
 	await page.goto('https://www.idnes.cz/technet/software/bezpecnostni-chyba-prohlizec-google-chrome-instalujte-aktualizaci.A201104_174236_software_nyv');
-	page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+	//page.on('console', msg => console.log('PAGE LOG:', msg.text()));
 
 	let pg = await page.evaluate(() => {
 
+		/*=jfont-checker.js=*/
 		/*=lines.js=*/
 		/*=export.js=*/
 
