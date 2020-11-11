@@ -256,7 +256,7 @@ function fitlayoutExportBoxes() {
 	let styleProps = [
 		"display",
 		"color",
-		"background",
+		"background-color",
 		"font",
 		"text-decoration-line",
 		"border",
