@@ -2,7 +2,8 @@
  * fitlayout-puppeteer -- Puppeteer-based web page renderer for FitLayout
  * (c) Radek Burget 2020
  *
- * Transforms a rendered web page to its RDF description.  
+ * Transforms a rendered web page to its JSON description that can be later
+ * parsed by fitlayout-render-puppeteer.
  */
 
 const puppeteer = require('puppeteer');
