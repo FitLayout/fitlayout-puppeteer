@@ -2,12 +2,14 @@ function fitlayoutExportBoxes() {
 
 	let styleProps = [
 		"display",
+		"position",
 		"color",
 		"background-color",
 		"font",
-		"border",
-		"margin",
-		"padding",
+		"border-top",
+		"border-right",
+		"border-bottom",
+		"border-left",
 		"overflow",
 		"transform"
 	];
