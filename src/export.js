@@ -86,6 +86,11 @@ function fitlayoutExportBoxes() {
 
 	function isVisibleElement(e) {
 		if (e.nodeType === Node.ELEMENT_NODE) {
+
+			if (e.offsetParent === null && e.offsetWidth === 0 && e.offsetHeight === 0) {
+				return false; //noscript etc.
+			}
+
 			var cs = window.getComputedStyle(e, null);
 			if (cs != null && cs.display === 'none' && cs.visibility === 'visible') {
 				return false;
