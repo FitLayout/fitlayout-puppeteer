@@ -258,7 +258,6 @@ function fitlayoutExportBoxes() {
 		"color",
 		"background-color",
 		"font",
-		"text-decoration-line",
 		"border",
 		"margin",
 		"padding",
@@ -279,18 +278,41 @@ function fitlayoutExportBoxes() {
 		ret.y = e.offsetTop;
 		ret.width = e.offsetWidth;
 		ret.height = e.offsetHeight;
+
+		//gather text decoration info for further propagation
+		let decoration = {};
+		decoration.underline = (style['text-decoration-line'].indexOf('underline') !== -1);
+		decoration.lineThrough = (style['text-decoration-line'].indexOf('line-through') !== -1);
+		e.fitlayoutDecoration = decoration;
+
 		if (e.offsetParent !== null) {
 			ret.parent = e.offsetParent.fitlayoutID;
 		}
 		if (e.parentElement !== null) {
 			ret.domParent = e.parentElement.fitlayoutID;
+			if (e.parentElement.fitlayoutDecoration !== undefined) {
+				//use the propagated text decoration if any
+				decoration.underline |= e.parentElement.fitlayoutDecoration.underline;
+				decoration.lineThrough |= e.parentElement.fitlayoutDecoration.lineThrough;
+			}
 		}
 
+		//encode the text decoration
+		if (decoration.underline || decoration.lineThrough) {
+			ret.decoration = '';
+			if (decoration.underline) {
+				ret.decoration += 'U';
+			}
+			if (decoration.lineThrough) {
+				ret.decoration += 'T';
+			}
+		}
+
+		//encode the remaining style properties
 		let css = "";
 		styleProps.forEach((name) => {
 			css += name + ":" + style[name] + ";";
 		});
-
 		ret.css = css;
 
 		return ret;
