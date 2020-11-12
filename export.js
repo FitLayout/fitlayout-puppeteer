@@ -22,12 +22,15 @@ function fitlayoutExportBoxes() {
 		let ret = {};
 		ret.id = e.fitlayoutID;
 		ret.tagName = e.tagName;
-		ret.x = e.offsetTop;
-		ret.y = e.offsetLeft;
+		ret.x = e.offsetLeft;
+		ret.y = e.offsetTop;
 		ret.width = e.offsetWidth;
 		ret.height = e.offsetHeight;
 		if (e.offsetParent !== null) {
 			ret.parent = e.offsetParent.fitlayoutID;
+		}
+		if (e.parentElement !== null) {
+			ret.domParent = e.parentElement.fitlayoutID;
 		}
 
 		let css = "";

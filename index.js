@@ -245,10 +245,10 @@ function fitlayoutDetectLines() {
 			console.log(xxs[i]);
 		}
 	}
-	xxs = Array.from(document.getElementsByTagName(TEXT_CONT));
+	/*xxs = Array.from(document.getElementsByTagName(TEXT_CONT));
 	for (var i = 0; i < xxs.length; i++) {
 		flatten(xxs[i]);
-	}
+	}*/
 }
 		/*=export.js=*/
 function fitlayoutExportBoxes() {
@@ -275,12 +275,15 @@ function fitlayoutExportBoxes() {
 		let ret = {};
 		ret.id = e.fitlayoutID;
 		ret.tagName = e.tagName;
-		ret.x = e.offsetTop;
-		ret.y = e.offsetLeft;
+		ret.x = e.offsetLeft;
+		ret.y = e.offsetTop;
 		ret.width = e.offsetWidth;
 		ret.height = e.offsetHeight;
 		if (e.offsetParent !== null) {
 			ret.parent = e.offsetParent.fitlayoutID;
+		}
+		if (e.parentElement !== null) {
+			ret.domParent = e.parentElement.fitlayoutID;
 		}
 
 		let css = "";

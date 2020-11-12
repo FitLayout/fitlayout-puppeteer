@@ -135,8 +135,8 @@ function fitlayoutDetectLines() {
 			console.log(xxs[i]);
 		}
 	}
-	xxs = Array.from(document.getElementsByTagName(TEXT_CONT));
+	/*xxs = Array.from(document.getElementsByTagName(TEXT_CONT));
 	for (var i = 0; i < xxs.length; i++) {
 		flatten(xxs[i]);
-	}
+	}*/
 }
