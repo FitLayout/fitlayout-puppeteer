@@ -17,7 +17,7 @@ const puppeteer = require('puppeteer');
 	});
 	const page = await browser.newPage();
 	//await page.goto('https://www.fit.vut.cz/study/courses/');
-	await page.goto('https://lupa.cz');
+	await page.goto('http://cssbox.sf.net');
 	//await page.goto('https://www.idnes.cz/technet/software/bezpecnostni-chyba-prohlizec-google-chrome-instalujte-aktualizaci.A201104_174236_software_nyv');
 	//page.on('console', msg => console.log('PAGE LOG:', msg.text()));
 
@@ -341,8 +341,14 @@ function fitlayoutExportBoxes() {
 	function isVisibleElement(e) {
 		if (e.nodeType === Node.ELEMENT_NODE) {
 
+			//special type element such as <svg> (we ignore for now)
+			if (e.offsetParent === undefined) {
+				return false;
+			}
+
+			//elements not shown such as <noscript>
 			if (e.offsetParent === null && e.offsetWidth === 0 && e.offsetHeight === 0) {
-				return false; //noscript etc.
+				return false;
 			}
 
 			var cs = window.getComputedStyle(e, null);

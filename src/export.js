@@ -87,8 +87,14 @@ function fitlayoutExportBoxes() {
 	function isVisibleElement(e) {
 		if (e.nodeType === Node.ELEMENT_NODE) {
 
+			//special type element such as <svg> (we ignore for now)
+			if (e.offsetParent === undefined) {
+				return false;
+			}
+
+			//elements not shown such as <noscript>
 			if (e.offsetParent === null && e.offsetWidth === 0 && e.offsetHeight === 0) {
-				return false; //noscript etc.
+				return false;
 			}
 
 			var cs = window.getComputedStyle(e, null);
