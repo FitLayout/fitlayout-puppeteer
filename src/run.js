@@ -23,9 +23,7 @@ const puppeteer = require('puppeteer');
 
 	let pg = await page.evaluate(() => {
 
-		/*=jfont-checker.js=*/
-		/*=lines.js=*/
-		/*=export.js=*/
+		/*=client.js=*/
 
 		fitlayoutDetectLines();
 		return fitlayoutExportBoxes();
