@@ -174,6 +174,18 @@ const puppeteer = require('puppeteer');
 		});
 		ret.css = css;
 
+		//add attributes
+		if (e.hasAttributes()) {
+			let attrs = e.attributes;
+			ret.attrs = [];
+			for (let i = 0; i < attrs.length; i++) {
+				ret.attrs.push({
+					name: attrs[i].name,
+					value: attrs[i].value
+				});
+			}
+		}
+
 		return ret;
 	}
 
