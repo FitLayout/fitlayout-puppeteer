@@ -124,6 +124,12 @@ const puppeteer = require('puppeteer');
 		"transform"
 	];
 
+	let replacedElements = [
+		"img",
+		"object",
+		"iframe"
+	];
+
 	let nextId = 0;
 
 
@@ -137,6 +143,10 @@ const puppeteer = require('puppeteer');
 		ret.y = e.offsetTop;
 		ret.width = e.offsetWidth;
 		ret.height = e.offsetHeight;
+
+		if (isReplacedElement(e)) {
+			ret.replaced = true;
+		}
 
 		//gather text decoration info for further propagation
 		let decoration = {};
@@ -223,6 +233,14 @@ const puppeteer = require('puppeteer');
 			if (cs != null && cs.display === 'none' && cs.visibility === 'visible') {
 				return false;
 			}
+			return true;
+		}
+		return false;
+	}
+
+	function isReplacedElement(e) {
+		const tag = e.tagName.toLowerCase();
+		if (replacedElements.indexOf(tag) !== -1) {
 			return true;
 		}
 		return false;
