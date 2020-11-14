@@ -275,7 +275,8 @@ const puppeteer = require('puppeteer');
 		page: {
 			width: document.body.scrollWidth,
 			height: document.body.scrollHeight,
-			title: document.title
+			title: document.title,
+			url: location.href
 		},
 		fonts: getExistingFonts(fonts),
 		boxes: boxes
