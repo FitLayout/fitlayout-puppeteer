@@ -20,6 +20,7 @@ const argv = require('yargs/yargs')(process.argv.slice(2))
 	.describe('H', 'Target page height')
 	.alias('s', 'screenshot')
 	.boolean('s')
+	.default('s', false)
 	.describe('s', 'Include a screenshot in the result')
     .help('h')
     .alias('h', 'help')
@@ -47,6 +48,17 @@ const puppeteer = require('puppeteer');
 	await page.goto(targetUrl);
 	//page.on('console', msg => err.write('PAGE LOG:', msg.text() + '\n'));
 
+	//take a screenshot when required
+	let screenShot = null;
+	if (argv.s) {
+		screenShot = await page.screenshot({
+			type: "png",
+			fullPage: true,
+			encoding: "base64"
+		});
+	}
+
+	//produce the box tree
 	let pg = await page.evaluate(() => {
 
 		/*=client.js=*/
@@ -479,6 +491,10 @@ function fitlayoutDetectLines() {
 		return fitlayoutExportBoxes();
 
 	});
+
+	if (screenShot !== null) {
+		pg.screenshot = screenShot;
+	}
 
 	await browser.close();
 
