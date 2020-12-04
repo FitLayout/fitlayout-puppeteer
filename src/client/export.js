@@ -149,7 +149,8 @@ function fitlayoutExportBoxes() {
 			boxList.push(box);
 			addFonts(style, fontSet);
 			if (isImageElement(root)) {
-				let img = { url: root.src };
+				root.setAttribute('data-fitlayoutid', box.id);
+				let img = { url: root.src, id: box.id };
 				if (root.hasAttribute('alt')) {
 					img.alt = root.getAttribute('alt');
 				}

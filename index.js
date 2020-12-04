@@ -301,7 +301,8 @@ const puppeteer = require('puppeteer');
 			boxList.push(box);
 			addFonts(style, fontSet);
 			if (isImageElement(root)) {
-				let img = { url: root.src };
+				root.setAttribute('data-fitlayoutid', box.id);
+				let img = { url: root.src, id: box.id };
 				if (root.hasAttribute('alt')) {
 					img.alt = root.getAttribute('alt');
 				}
@@ -520,13 +521,12 @@ function fitlayoutDetectLines() {
 	if (argv.I && pg.images) {
 		for (let i = 0; i < pg.images.length; i++) {
 			let img = pg.images[i];
-			try {
-				let resp = await page.goto(img.url);
-				let buffer = await resp.buffer();
-				img.data = buffer.toString('base64');
-				img.type = resp.headers()['content-type'];
-			} catch (e) {
-				console.error(e);
+			let elem = await page.$('*[data-fitlayoutid="' + img.id + '"]');
+			if (elem !== null) {
+				img.data = await elem.screenshot({
+					type: "png",
+					encoding: "base64"
+				});
 			}
 		}
 	}

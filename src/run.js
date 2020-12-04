@@ -72,21 +72,21 @@ const puppeteer = require('puppeteer');
 
 	});
 
+	// add a screenshot if it was taken
 	if (screenShot !== null) {
 		pg.screenshot = screenShot;
 	}
 
-	// download the images if required
+	// capture the images if required
 	if (argv.I && pg.images) {
 		for (let i = 0; i < pg.images.length; i++) {
 			let img = pg.images[i];
-			try {
-				let resp = await page.goto(img.url);
-				let buffer = await resp.buffer();
-				img.data = buffer.toString('base64');
-				img.type = resp.headers()['content-type'];
-			} catch (e) {
-				console.error(e);
+			let elem = await page.$('*[data-fitlayoutid="' + img.id + '"]');
+			if (elem !== null) {
+				img.data = await elem.screenshot({
+					type: "png",
+					encoding: "base64"
+				});
 			}
 		}
 	}
