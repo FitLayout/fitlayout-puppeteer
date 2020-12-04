@@ -22,6 +22,10 @@ const argv = require('yargs/yargs')(process.argv.slice(2))
 	.boolean('s')
 	.default('s', false)
 	.describe('s', 'Include a screenshot in the result')
+	.alias('I', 'download-images')
+	.boolean('I')
+	.default('I', false)
+	.describe('I', 'Download all contained images referenced in <img> elements')
     .help('h')
     .alias('h', 'help')
     .argv;
@@ -46,7 +50,7 @@ const puppeteer = require('puppeteer');
 	});
 	const page = await browser.newPage();
 	await page.goto(targetUrl);
-	//page.on('console', msg => err.write('PAGE LOG:', msg.text() + '\n'));
+	//page.on('console', msg => console.log('PAGE LOG:', msg.text() + '\n'));
 
 	//take a screenshot when required
 	let screenShot = null;
@@ -70,6 +74,21 @@ const puppeteer = require('puppeteer');
 
 	if (screenShot !== null) {
 		pg.screenshot = screenShot;
+	}
+
+	// download the images if required
+	if (argv.I && pg.images) {
+		for (let i = 0; i < pg.images.length; i++) {
+			let img = pg.images[i];
+			try {
+				let resp = await page.goto(img.url);
+				let buffer = await resp.buffer();
+				img.data = buffer.toString('base64');
+				img.type = resp.headers()['content-type'];
+			} catch (e) {
+				console.error(e);
+			}
+		}
 	}
 
 	await browser.close();

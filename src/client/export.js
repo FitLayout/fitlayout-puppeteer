@@ -136,17 +136,29 @@ function fitlayoutExportBoxes() {
 		return false;
 	}
 
-	function processBoxes(root, boxList, fontSet) {
+	function isImageElement(e) {
+		const tag = e.tagName.toLowerCase();
+		return tag == 'img' && e.hasAttribute('src');
+	}
+
+	function processBoxes(root, boxList, fontSet, imageList) {
 
 		if (isVisibleElement(root)) {
 			let style = window.getComputedStyle(root, null);
 			let box = createBox(root, style);
 			boxList.push(box);
 			addFonts(style, fontSet);
+			if (isImageElement(root)) {
+				let img = { url: root.src };
+				if (root.hasAttribute('alt')) {
+					img.alt = root.getAttribute('alt');
+				}
+				imageList.push(img);
+			}
 
 			var children = root.childNodes;
 			for (var i = 0; i < children.length; i++) {
-				processBoxes(children[i], boxList, fontSet);
+				processBoxes(children[i], boxList, fontSet, imageList);
 			}
 			for (var i = 0; i < children.length; i++) {
 				if (children[i].nodeType === Node.TEXT_NODE && children[i].nodeValue.trim().length > 0) {
@@ -158,8 +170,11 @@ function fitlayoutExportBoxes() {
 	}
 
 	let boxes = [];
+	let images = [];
 	let fonts = new Set();
-	processBoxes(document.body, boxes, fonts);
+	console.log(boxes);
+	console.log(images);
+	processBoxes(document.body, boxes, fonts, images);
 
 	let ret = {
 		page: {
@@ -169,7 +184,8 @@ function fitlayoutExportBoxes() {
 			url: location.href
 		},
 		fonts: getExistingFonts(fonts),
-		boxes: boxes
+		boxes: boxes,
+		images: images
 	}
 
 	return ret;

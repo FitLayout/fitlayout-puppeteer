@@ -22,6 +22,10 @@ const argv = require('yargs/yargs')(process.argv.slice(2))
 	.boolean('s')
 	.default('s', false)
 	.describe('s', 'Include a screenshot in the result')
+	.alias('I', 'download-images')
+	.boolean('I')
+	.default('I', false)
+	.describe('I', 'Download all contained images referenced in <img> elements')
     .help('h')
     .alias('h', 'help')
     .argv;
@@ -46,7 +50,7 @@ const puppeteer = require('puppeteer');
 	});
 	const page = await browser.newPage();
 	await page.goto(targetUrl);
-	//page.on('console', msg => err.write('PAGE LOG:', msg.text() + '\n'));
+	//page.on('console', msg => console.log('PAGE LOG:', msg.text() + '\n'));
 
 	//take a screenshot when required
 	let screenShot = null;
@@ -284,17 +288,29 @@ const puppeteer = require('puppeteer');
 		return false;
 	}
 
-	function processBoxes(root, boxList, fontSet) {
+	function isImageElement(e) {
+		const tag = e.tagName.toLowerCase();
+		return tag == 'img' && e.hasAttribute('src');
+	}
+
+	function processBoxes(root, boxList, fontSet, imageList) {
 
 		if (isVisibleElement(root)) {
 			let style = window.getComputedStyle(root, null);
 			let box = createBox(root, style);
 			boxList.push(box);
 			addFonts(style, fontSet);
+			if (isImageElement(root)) {
+				let img = { url: root.src };
+				if (root.hasAttribute('alt')) {
+					img.alt = root.getAttribute('alt');
+				}
+				imageList.push(img);
+			}
 
 			var children = root.childNodes;
 			for (var i = 0; i < children.length; i++) {
-				processBoxes(children[i], boxList, fontSet);
+				processBoxes(children[i], boxList, fontSet, imageList);
 			}
 			for (var i = 0; i < children.length; i++) {
 				if (children[i].nodeType === Node.TEXT_NODE && children[i].nodeValue.trim().length > 0) {
@@ -306,8 +322,11 @@ const puppeteer = require('puppeteer');
 	}
 
 	let boxes = [];
+	let images = [];
 	let fonts = new Set();
-	processBoxes(document.body, boxes, fonts);
+	console.log(boxes);
+	console.log(images);
+	processBoxes(document.body, boxes, fonts, images);
 
 	let ret = {
 		page: {
@@ -317,7 +336,8 @@ const puppeteer = require('puppeteer');
 			url: location.href
 		},
 		fonts: getExistingFonts(fonts),
-		boxes: boxes
+		boxes: boxes,
+		images: images
 	}
 
 	return ret;
@@ -494,6 +514,21 @@ function fitlayoutDetectLines() {
 
 	if (screenShot !== null) {
 		pg.screenshot = screenShot;
+	}
+
+	// download the images if required
+	if (argv.I && pg.images) {
+		for (let i = 0; i < pg.images.length; i++) {
+			let img = pg.images[i];
+			try {
+				let resp = await page.goto(img.url);
+				let buffer = await resp.buffer();
+				img.data = buffer.toString('base64');
+				img.type = resp.headers()['content-type'];
+			} catch (e) {
+				console.error(e);
+			}
+		}
 	}
 
 	await browser.close();
