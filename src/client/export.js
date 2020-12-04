@@ -44,6 +44,9 @@ function fitlayoutExportBoxes() {
 		decoration.lineThrough = (style['text-decoration-line'].indexOf('line-through') !== -1);
 		e.fitlayoutDecoration = decoration;
 
+		//mark the boxes that have some background images
+		ret.hasBgImage = (style['background-image'] !== 'none');
+
 		if (e.offsetParent !== null) {
 			ret.parent = e.offsetParent.fitlayoutID;
 		}
@@ -148,12 +151,15 @@ function fitlayoutExportBoxes() {
 			let box = createBox(root, style);
 			boxList.push(box);
 			addFonts(style, fontSet);
-			if (isImageElement(root)) {
+			// save image ids
+			if (isImageElement(root)) { //img elements
 				root.setAttribute('data-fitlayoutid', box.id);
-				let img = { url: root.src, id: box.id };
-				if (root.hasAttribute('alt')) {
-					img.alt = root.getAttribute('alt');
-				}
+				let img = { id: box.id, bg: false };
+				imageList.push(img);
+			} else if (box.hasBgImage) { //background images
+				root.setAttribute('data-fitlayoutid', box.id);
+				//root.setAttribute('data-fitlayoutbg', '1');
+				let img = { id: box.id, bg: true };
 				imageList.push(img);
 			}
 

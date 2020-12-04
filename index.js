@@ -43,7 +43,7 @@ const puppeteer = require('puppeteer');
 
 (async () => {
 	const browser = await puppeteer.launch({
-		headless: false,
+		headless: true,
 		//slowMo: 250,
 		args: [`--window-size=${wwidth},${wheight}`],
 		defaultViewport: null
@@ -196,6 +196,9 @@ const puppeteer = require('puppeteer');
 		decoration.lineThrough = (style['text-decoration-line'].indexOf('line-through') !== -1);
 		e.fitlayoutDecoration = decoration;
 
+		//mark the boxes that have some background images
+		ret.hasBgImage = (style['background-image'] !== 'none');
+
 		if (e.offsetParent !== null) {
 			ret.parent = e.offsetParent.fitlayoutID;
 		}
@@ -300,12 +303,15 @@ const puppeteer = require('puppeteer');
 			let box = createBox(root, style);
 			boxList.push(box);
 			addFonts(style, fontSet);
-			if (isImageElement(root)) {
+			// save image ids
+			if (isImageElement(root)) { //img elements
 				root.setAttribute('data-fitlayoutid', box.id);
-				let img = { url: root.src, id: box.id };
-				if (root.hasAttribute('alt')) {
-					img.alt = root.getAttribute('alt');
-				}
+				let img = { id: box.id, bg: false };
+				imageList.push(img);
+			} else if (box.hasBgImage) { //background images
+				root.setAttribute('data-fitlayoutid', box.id);
+				//root.setAttribute('data-fitlayoutbg', '1');
+				let img = { id: box.id, bg: true };
 				imageList.push(img);
 			}
 
@@ -513,21 +519,40 @@ function fitlayoutDetectLines() {
 
 	});
 
+	// add a screenshot if it was taken
 	if (screenShot !== null) {
 		pg.screenshot = screenShot;
 	}
 
-	// download the images if required
+	// capture the images if required
 	if (argv.I && pg.images) {
+		await page.addStyleTag({content: '[data-fitlayoutbg="1"] * { display: none }'});
 		for (let i = 0; i < pg.images.length; i++) {
 			let img = pg.images[i];
-			let elem = await page.$('*[data-fitlayoutid="' + img.id + '"]');
+			let selector = '*[data-fitlayoutid="' + img.id + '"]';
+
+			if (img.bg) {
+				//for background images switch off the contents
+				await page.$eval(selector, e => {
+					e.setAttribute('data-fitlayoutbg', '1');
+				});
+			}
+
+			let elem = await page.$(selector);
 			if (elem !== null) {
 				img.data = await elem.screenshot({
 					type: "png",
 					encoding: "base64"
 				});
 			}
+
+			if (img.bg) {
+				//for background images switch the contents on again
+				await page.$eval(selector, e => {
+					e.setAttribute('data-fitlayoutbg', '0');
+				});
+			}
+
 		}
 	}
 

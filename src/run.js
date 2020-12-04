@@ -79,15 +79,33 @@ const puppeteer = require('puppeteer');
 
 	// capture the images if required
 	if (argv.I && pg.images) {
+		await page.addStyleTag({content: '[data-fitlayoutbg="1"] * { display: none }'});
 		for (let i = 0; i < pg.images.length; i++) {
 			let img = pg.images[i];
-			let elem = await page.$('*[data-fitlayoutid="' + img.id + '"]');
+			let selector = '*[data-fitlayoutid="' + img.id + '"]';
+
+			if (img.bg) {
+				//for background images switch off the contents
+				await page.$eval(selector, e => {
+					e.setAttribute('data-fitlayoutbg', '1');
+				});
+			}
+
+			let elem = await page.$(selector);
 			if (elem !== null) {
 				img.data = await elem.screenshot({
 					type: "png",
 					encoding: "base64"
 				});
 			}
+
+			if (img.bg) {
+				//for background images switch the contents on again
+				await page.$eval(selector, e => {
+					e.setAttribute('data-fitlayoutbg', '0');
+				});
+			}
+
 		}
 	}
 
