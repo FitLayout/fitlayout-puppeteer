@@ -93,10 +93,14 @@ const puppeteer = require('puppeteer');
 
 			let elem = await page.$(selector);
 			if (elem !== null) {
-				img.data = await elem.screenshot({
-					type: "png",
-					encoding: "base64"
-				});
+				try {
+					img.data = await elem.screenshot({
+						type: "png",
+						encoding: "base64"
+					});
+				} catch (e) {
+					//failed, nothing to store
+				}
 			}
 
 			if (img.bg) {
