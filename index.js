@@ -152,7 +152,7 @@ const puppeteer = require('puppeteer');
 	this.checkfont = checkfont;
 })();function fitlayoutExportBoxes() {
 
-	let styleProps = [
+	const styleProps = [
 		"display",
 		"position",
 		"color",
@@ -166,10 +166,16 @@ const puppeteer = require('puppeteer');
 		"transform"
 	];
 
-	let replacedElements = [
+	const replacedElements = [
 		"img",
+		"svg",
 		"object",
 		"iframe"
+	];
+
+	const replacedImages = [
+		"img",
+		"svg"
 	];
 
 	let nextId = 0;
@@ -199,7 +205,9 @@ const puppeteer = require('puppeteer');
 		//mark the boxes that have some background images
 		ret.hasBgImage = (style['background-image'] !== 'none');
 
-		if (e.offsetParent !== null) {
+		if (e.offsetParent === undefined) { //special elements such as <svg>
+			ret.parent = e.parentElement.fitlayoutID; //use parent instead of offsetParent
+		} else if (e.offsetParent !== null) {
 			ret.parent = e.offsetParent.fitlayoutID;
 		}
 		if (e.parentElement !== null) {
@@ -264,9 +272,9 @@ const puppeteer = require('puppeteer');
 	function isVisibleElement(e) {
 		if (e.nodeType === Node.ELEMENT_NODE) {
 
-			//special type element such as <svg> (we ignore for now)
+			//special type element such as <svg> -- allow only known replaced elements
 			if (e.offsetParent === undefined) {
-				return false;
+				return isReplacedElement(e);
 			}
 
 			//elements not shown such as <noscript>
@@ -293,7 +301,14 @@ const puppeteer = require('puppeteer');
 
 	function isImageElement(e) {
 		const tag = e.tagName.toLowerCase();
-		return tag == 'img' && e.hasAttribute('src');
+		if (replacedImages.indexOf(tag) !== -1) {
+			if (tag == 'img') {
+				return e.hasAttribute('src'); //images must have a src specified
+			} else {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	function processBoxes(root, boxList, fontSet, imageList) {
@@ -315,13 +330,16 @@ const puppeteer = require('puppeteer');
 				imageList.push(img);
 			}
 
-			var children = root.childNodes;
-			for (var i = 0; i < children.length; i++) {
-				processBoxes(children[i], boxList, fontSet, imageList);
-			}
-			for (var i = 0; i < children.length; i++) {
-				if (children[i].nodeType === Node.TEXT_NODE && children[i].nodeValue.trim().length > 0) {
-					box.text = children[i].nodeValue;
+			if (!box.replaced) //do not process the contents of replaced boxes
+			{
+				var children = root.childNodes;
+				for (var i = 0; i < children.length; i++) {
+					processBoxes(children[i], boxList, fontSet, imageList);
+				}
+				for (var i = 0; i < children.length; i++) {
+					if (children[i].nodeType === Node.TEXT_NODE && children[i].nodeValue.trim().length > 0) {
+						box.text = children[i].nodeValue;
+					}
 				}
 			}
 		}
