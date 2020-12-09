@@ -49,7 +49,7 @@ const puppeteer = require('puppeteer');
 		defaultViewport: null
 	});
 	const page = await browser.newPage();
-	await page.goto(targetUrl);
+	await page.goto(targetUrl, {waitUntil: 'networkidle0', timeout: 10000});
 	//page.on('console', msg => console.log('PAGE LOG:', msg.text() + '\n'));
 
 	//take a screenshot when required
