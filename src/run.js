@@ -79,37 +79,39 @@ const puppeteer = require('puppeteer');
 
 	// capture the images if required
 	if (argv.I && pg.images) {
+		// hide the contents of the marked elemens
 		await page.addStyleTag({content: '[data-fitlayoutbg="1"] * { display: none }'});
+		// take the screenshots
 		for (let i = 0; i < pg.images.length; i++) {
 			let img = pg.images[i];
 			let selector = '*[data-fitlayoutid="' + img.id + '"]';
 
-			if (img.bg) {
-				//for background images switch off the contents
-				await page.$eval(selector, e => {
-					e.setAttribute('data-fitlayoutbg', '1');
-				});
-			}
+			try {
+				if (img.bg) {
+					// for background images switch off the contents
+					await page.$eval(selector, e => {
+						e.setAttribute('data-fitlayoutbg', '1');
+					});
+				}
 
-			let elem = await page.$(selector);
-			if (elem !== null) {
-				try {
+				let elem = await page.$(selector);
+				if (elem !== null) {
 					img.data = await elem.screenshot({
 						type: "png",
 						encoding: "base64"
 					});
-				} catch (e) {
-					//failed, nothing to store
 				}
-			}
 
-			if (img.bg) {
-				//for background images switch the contents on again
-				await page.$eval(selector, e => {
-					e.setAttribute('data-fitlayoutbg', '0');
-				});
+				if (img.bg) {
+					//for background images switch the contents on again
+					await page.$eval(selector, e => {
+						e.setAttribute('data-fitlayoutbg', '0');
+					});
+				}
+			} catch (e) {
+				//console.error('Couldn\'t capture image ' + i);
+				//console.error(e);
 			}
-
 		}
 	}
 
