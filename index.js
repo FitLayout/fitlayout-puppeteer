@@ -43,7 +43,7 @@ const puppeteer = require('puppeteer');
 
 (async () => {
 	const browser = await puppeteer.launch({
-		headless: false,
+		headless: true,
 		//slowMo: 250,
 		args: [`--window-size=${wwidth},${wheight}`],
 		defaultViewport: null
