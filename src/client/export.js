@@ -40,6 +40,10 @@ function fitlayoutExportBoxes() {
 		ret.width = e.offsetWidth;
 		ret.height = e.offsetHeight;
 
+		if (e.fitlayoutLines !== undefined) {
+			ret.lines = e.fitlayoutLines; //elements split to multiple lines by detectLines()
+		}
+
 		if (isReplacedElement(e)) {
 			ret.replaced = true;
 		}

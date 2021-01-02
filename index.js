@@ -192,6 +192,10 @@ const puppeteer = require('puppeteer');
 		ret.width = e.offsetWidth;
 		ret.height = e.offsetHeight;
 
+		if (e.fitlayoutLines !== undefined) {
+			ret.lines = e.fitlayoutLines; //elements split to multiple lines by detectLines()
+		}
+
 		if (isReplacedElement(e)) {
 			ret.replaced = true;
 		}
@@ -421,6 +425,7 @@ function fitlayoutDetectLines() {
 		} else if (ltext.length == 1) {
 			p.innerText = ltext[0];
 		} else {
+			parent.fitlayoutLines = ltext.length; //mark the parent elements that have been split to multiple lines
 			p.innerText = '';
 			for (var i = 0; i < ltext.length; i++) {
 				var lelem = document.createElement(LINE_CONT);
