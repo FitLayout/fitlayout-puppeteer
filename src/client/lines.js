@@ -13,20 +13,20 @@ function fitlayoutDetectLines() {
 	 * Finds lines in a given XX element and marks them with separate elements.
 	 * @param {Element} xx the XX element to be processed.
 	 */
-    function createLines(xx) {
-    	var text = xx.textContent;
-    	var rects = xx.getClientRects();
-    	if (rects.length > 1) {
-    	    lines = splitTextByLines(xx, text, rects);
-    	    xx.innerText = '';
-    	    for (var line of lines) {
-    	    	xx.appendChild(line);
-    	    }
-    	    return lines.length;
-    	} else {
-    		return rects.length;
-    	}
-    }
+	function createLines(xx) {
+		var text = xx.textContent;
+		var rects = xx.getClientRects();
+		if (rects.length > 1) {
+			lines = splitTextByLines(xx, text, rects);
+			xx.innerText = '';
+			for (var line of lines) {
+				xx.appendChild(line);
+			}
+			return lines.length;
+		} else {
+			return rects.length;
+		}
+	}
 
 	/**
 	 * Splits the text content of a given element based on the client rectangles.
@@ -36,11 +36,11 @@ function fitlayoutDetectLines() {
 	 * @param {*} rects element client rectangles to be used for splitting 
 	 */
 	function splitTextByLines(parent, text, rects) {
-    	var breaks = [];
-    	var lastY = 0;
-    	for (var i = 0; i < rects.length; i++) {
-    		var rect = rects[i];
-    		// TODO this is Chrome-specific; use caretPositionFromPoint in other browsers
+		var breaks = [];
+		var lastY = 0;
+		for (var i = 0; i < rects.length; i++) {
+			var rect = rects[i];
+			// TODO this is Chrome-specific; use caretPositionFromPoint in other browsers
 			var range = document.caretRangeFromPoint(rect.x + 1, rect.y + rect.height / 2); //use +1 to be sure to hit some position
 			if (range) {
 				var ofs = range.startOffset;
@@ -50,18 +50,18 @@ function fitlayoutDetectLines() {
 					lastY = rect.y;
 				}
 			}
-    	}
-    	breaks.push(text.length);
-        //split to elements
-        var lines = [];
-        for (var i = 0; i < breaks.length - 1; i++) {
-        	var subtext = text.substring(breaks[i], breaks[i + 1]);
-            var line = document.createElement(LINE_CONT);
-            line.appendChild(document.createTextNode(subtext));
-            lines.push(line);
-        }
+		}
+		breaks.push(text.length);
+		//split to elements
+		var lines = [];
+		for (var i = 0; i < breaks.length - 1; i++) {
+			var subtext = text.substring(breaks[i], breaks[i + 1]);
+			var line = document.createElement(LINE_CONT);
+			line.appendChild(document.createTextNode(subtext));
+			lines.push(line);
+		}
 		return lines;
-    }
+	}
 
 	function isVisibleElement(e) {
 		if (e.nodeType == Node.ELEMENT_NODE) {
