@@ -18,8 +18,6 @@ function fitlayoutDetectLines() {
     	var rects = xx.getClientRects();
     	if (rects.length > 1) {
     	    lines = splitTextByLines(xx, text, rects);
-    	    console.log(xx);
-    	    console.log(lines);
     	    xx.innerText = '';
     	    for (var line of lines) {
     	    	xx.appendChild(line);
@@ -55,7 +53,6 @@ function fitlayoutDetectLines() {
     	}
     	breaks.push(text.length);
         //split to elements
-        console.log(breaks);
         var lines = [];
         for (var i = 0; i < breaks.length - 1; i++) {
         	var subtext = text.substring(breaks[i], breaks[i + 1]);
