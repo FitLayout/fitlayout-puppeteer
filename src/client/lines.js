@@ -2,82 +2,73 @@
  * Line detection in a displayed web page.
  * (c) 2020 Radek Burget <burgetr@fit.vutbr.cz>
  * 
- * Inspired by a solution by Juan Mendes
- * https://stackoverflow.com/questions/27915469/how-to-split-an-html-paragraph-up-into-its-lines-of-text-with-javascript 
  */
 
 function fitlayoutDetectLines() {
 
-	var TEXT_CONT = "XX";
-	var LINE_CONT = "XLINE";
-	var WORD_CONT = "XW";
+	var TEXT_CONT = "XX"; // element name to be used for wrapping the text nodes
+	var LINE_CONT = "XLINE"; // element name to be used for wrapping the detected lines
 
 	/**
-	 * Finds lines in a given element and marks them with separate elements.
-	 * @param {Element} p 
+	 * Finds lines in a given XX element and marks them with separate elements.
+	 * @param {Element} xx the XX element to be processed.
 	 */
-	function createLines(p) {
-		splitWords(p);
-		var parent = p.parentElement;
-		var lines = getLines(p);
-		var ltext = lines.map(function (line) {
-			return line.map(function (span) {
-				return span.innerText;
-			}).join(' ')
-		});
-		if (ltext.length == 0) {
-			//may this happen? do nothing.
-		} else if (ltext.length == 1) {
-			p.innerText = ltext[0];
-		} else {
-			p.innerText = '';
-			for (var i = 0; i < ltext.length; i++) {
-				var lelem = document.createElement(LINE_CONT);
-				lelem.innerText = ltext[i] + ' '; //to allow line brek after
-				parent.insertBefore(lelem, p);
+    function createLines(xx) {
+    	var text = xx.textContent;
+    	var rects = xx.getClientRects();
+    	if (rects.length > 1) {
+    	    lines = splitTextByLines(xx, text, rects);
+    	    console.log(xx);
+    	    console.log(lines);
+    	    xx.innerText = '';
+    	    for (var line of lines) {
+    	    	xx.appendChild(line);
+    	    }
+    	    return lines.length;
+    	} else {
+    		return rects.length;
+    	}
+    }
+
+	/**
+	 * Splits the text content of a given element based on the client rectangles.
+	 * 
+	 * @param {Element} parent the parent element of the text node 
+	 * @param {string} text the text content to be split 
+	 * @param {*} rects element client rectangles to be used for splitting 
+	 */
+	function splitTextByLines(parent, text, rects) {
+    	var breaks = [];
+    	var lastY = 0;
+    	for (var i = 0; i < rects.length; i++) {
+    		var rect = rects[i];
+    		// TODO this is Chrome-specific; use caretPositionFromPoint in other browsers
+			var range = document.caretRangeFromPoint(rect.x + 1, rect.y + rect.height / 2); //use +1 to be sure to hit some position
+			if (range) {
+				var ofs = range.startOffset;
+				// detect line breaks
+				if (i == 0 || rect.y != lastY) {
+					breaks.push(ofs);
+					lastY = rect.y;
+				}
 			}
-			parent.removeChild(p);
-		}
-		return ltext.length;
-	}
-
-	/**
-	 * Replaces words in a given element by XWORD elements.
-	 */
-	function splitWords(p) {
-		p.innerHTML = p.innerText.split(/\s/).map(function (word) {
-			return '<' + WORD_CONT + '>' + word + '</' + WORD_CONT + '>'
-		}).join(' ');
-	}
-
-	/**
-	 * Compares the positions of words in a given element and splits the words to lines.
-	 * @param {Element} p the element to be processed.
-	 */
-	function getLines(p) {
-		var lines = [];
-		var line;
-		var words = p.getElementsByTagName(WORD_CONT);
-		var lastTop;
-		for (var i = 0; i < words.length; i++) {
-			var word = words[i];
-			if (word.offsetTop != lastTop) {
-				lastTop = word.offsetTop;
-				line = [];
-				lines.push(line);
-			}
-			line.push(word);
-		}
+    	}
+    	breaks.push(text.length);
+        //split to elements
+        console.log(breaks);
+        var lines = [];
+        for (var i = 0; i < breaks.length - 1; i++) {
+        	var subtext = text.substring(breaks[i], breaks[i + 1]);
+            var line = document.createElement(LINE_CONT);
+            line.appendChild(document.createTextNode(subtext));
+            lines.push(line);
+        }
 		return lines;
-	}
+    }
 
 	function isVisibleElement(e) {
 		if (e.nodeType == Node.ELEMENT_NODE) {
-			var cs = window.getComputedStyle(e, null);
-			if (cs != null && cs.display === 'none') {
-				return false;
-			}
-			return true;
+			return (e.getClientRects().length > 0);
 		}
 		return false;
 	}
@@ -109,24 +100,6 @@ function fitlayoutDetectLines() {
 		}
 	}
 
-	/**
-	 * Checks if a given XX element is necessary and removes it when it is not.
-	 * @param {Element} p the XX element to be considered
-	 */
-	function flatten(p) {
-		var children = p.parentElement.childNodes;
-		var cnt = 0;
-		for (var i = 0; i < children.length; i++) {
-			var child = children.item(i);
-			if (child.nodeType == Node.ELEMENT_NODE) {
-				cnt++;
-			}
-		}
-		if (cnt == 1) {
-			p.parentElement.innerText = p.innerText;
-		}
-	}
-
 	unmix(document.body);
 	var xxs = Array.from(document.getElementsByTagName(TEXT_CONT));
 	for (var i = 0; i < xxs.length; i++) {
@@ -135,8 +108,4 @@ function fitlayoutDetectLines() {
 			console.log(xxs[i]);
 		}
 	}
-	/*xxs = Array.from(document.getElementsByTagName(TEXT_CONT));
-	for (var i = 0; i < xxs.length; i++) {
-		flatten(xxs[i]);
-	}*/
 }

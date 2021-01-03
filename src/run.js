@@ -49,18 +49,19 @@ const puppeteer = require('puppeteer');
 		defaultViewport: null
 	});
 	const page = await browser.newPage();
-	await page.goto(targetUrl, {waitUntil: 'networkidle0', timeout: 10000});
+	try {
+		await page.goto(targetUrl, {waitUntil: 'networkidle0', timeout: 10000});
+	} catch (e) {
+		console.error(e);
+	}
 	//page.on('console', msg => console.log('PAGE LOG:', msg.text() + '\n'));
 
-	//take a screenshot when required
-	let screenShot = null;
-	if (argv.s) {
-		screenShot = await page.screenshot({
-			type: "png",
-			fullPage: true,
-			encoding: "base64"
-		});
-	}
+	//always take a screenshot in order to get the whole page into the viewport
+	let screenShot = await page.screenshot({
+		type: "png",
+		fullPage: true,
+		encoding: "base64"
+	});
 
 	//produce the box tree
 	let pg = await page.evaluate(() => {
@@ -72,8 +73,8 @@ const puppeteer = require('puppeteer');
 
 	});
 
-	// add a screenshot if it was taken
-	if (screenShot !== null) {
+	// add a screenshot if it was required
+	if (argv.s && screenShot !== null) {
 		pg.screenshot = screenShot;
 	}
 
