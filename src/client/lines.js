@@ -14,14 +14,15 @@ function fitlayoutDetectLines() {
 	 * @param {Element} xx the XX element to be processed.
 	 */
 	function createLines(xx) {
-		var text = xx.textContent;
-		var rects = xx.getClientRects();
+		let rects = xx.getClientRects();
 		if (rects.length > 1) {
-			lines = splitTextByLines(xx, text, rects);
+			const parent = xx.parentElement;
+			lines = splitTextByLines(xx, xx.textContent, rects);
 			xx.innerText = '';
 			for (var line of lines) {
-				xx.appendChild(line);
+				parent.insertBefore(line, xx);
 			}
+			parent.removeChild(xx);
 			return lines.length;
 		} else {
 			return rects.length;
