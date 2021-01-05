@@ -163,6 +163,7 @@ function fitlayoutExportBoxes() {
 			if (first || rect.y + rect.height > y2) {
 				y2 = rect.y + rect.height;
 			}
+			first = false;
 		}
 		return { x: x1, y: y1, width: x2 - x1, height: y2 - y1 };
 	}
