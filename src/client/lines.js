@@ -7,7 +7,7 @@
 function fitlayoutDetectLines() {
 
 	var TEXT_CONT = "XX"; // element name to be used for wrapping the text nodes
-	var LINE_CONT = "XLINE"; // element name to be used for wrapping the detected lines
+	var LINE_CONT = "XL"; // element name to be used for wrapping the detected lines
 
 	/**
 	 * Finds lines in a given XX element and marks them with separate elements.
@@ -80,7 +80,7 @@ function fitlayoutDetectLines() {
 		var replace = [];
 		for (var i = 0; i < children.length; i++) {
 			var child = children.item(i);
-			if (child.nodeType == Node.TEXT_NODE && child.nodeValue.trim().length > 0) {
+			if (child.nodeType == Node.TEXT_NODE /*&& child.nodeValue.trim().length > 0*/) {
 				var newchild = document.createElement(TEXT_CONT);
 				newchild.appendChild(document.createTextNode(child.nodeValue));
 				replace.push(newchild);
