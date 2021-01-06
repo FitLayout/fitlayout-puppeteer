@@ -565,11 +565,13 @@ function fitlayoutDetectLines() {
 	 * @param {Element} p the root element of the subtree to process.
 	 */
 	function unmix(p) {
-		var children = p.childNodes;
-		var replace = [];
+		const children = p.childNodes;
+		const isMulti = (p.getClientRects().length > 1); //preserve whitespace nodes in multi-rect elements
+		// create the elements for thext nodes
+		let replace = [];
 		for (var i = 0; i < children.length; i++) {
 			var child = children.item(i);
-			if (child.nodeType == Node.TEXT_NODE /*&& child.nodeValue.trim().length > 0*/) {
+			if (child.nodeType == Node.TEXT_NODE && (isMulti || child.nodeValue.trim().length > 0)) {
 				var newchild = document.createElement(TEXT_CONT);
 				newchild.appendChild(document.createTextNode(child.nodeValue));
 				replace.push(newchild);
@@ -580,9 +582,18 @@ function fitlayoutDetectLines() {
 				}
 			}
 		}
+		// replace the text nodes with elements in DOM
 		for (var i = 0; i < replace.length; i++) {
 			if (replace[i] != null) {
 				p.replaceChild(replace[i], children.item(i));
+			}
+		}
+		// remove the text elements that are rendered as empty
+		if (isMulti) {
+			for (var i = 0; i < replace.length; i++) {
+				if (replace[i] != null && replace[i].innerText.length == 0) {
+					p.removeChild(replace[i]);
+				}
 			}
 		}
 	}
