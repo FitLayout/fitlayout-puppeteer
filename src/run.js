@@ -1,6 +1,6 @@
 /*
  * fitlayout-puppeteer -- Puppeteer-based web page renderer for FitLayout
- * (c) Radek Burget 2020
+ * (c) Radek Burget 2020-2021
  *
  * Transforms a rendered web page to its JSON description that can be later
  * parsed by fitlayout-render-puppeteer.
@@ -8,7 +8,7 @@
 
 const argv = require('yargs/yargs')(process.argv.slice(2))
     .usage('Usage: $0 [options] <url>')
-	//.example('$0 -w 1200 -h 800 http://cssbox.sf.net', '')
+	//.example('$0 -W 1200 -H 800 http://cssbox.sf.net', '')
 	.strictOptions(true)
     .alias('W', 'width')
     .nargs('W', 1)
@@ -18,6 +18,10 @@ const argv = require('yargs/yargs')(process.argv.slice(2))
     .nargs('H', 1)
 	.default('H', 800)
 	.describe('H', 'Target page height')
+	.alias('P', 'persistence')
+	.nargs('P', 1)
+	.default('P', 1)
+	.describe('P', 'Content downloading persistence: 0 (quick), 1 (standard), 2 (wait longer), 3 (get as much as possible)')
 	.alias('s', 'screenshot')
 	.boolean('s')
 	.default('s', false)
@@ -39,6 +43,22 @@ const targetUrl = argv._[0];
 const wwidth = argv.width;
 const wheight = argv.height;
 
+let downloadOptions = {};
+switch (argv.P) {
+	case 0:
+		downloadOptions = {waitUntil: 'domcontentloaded', timeout: 10000};
+		break;
+	case 1:
+		downloadOptions = {waitUntil: 'load', timeout: 15000};
+		break;
+	case 2:
+		downloadOptions = {waitUntil: 'networkidle2', timeout: 15000};
+		break;
+	default:
+		downloadOptions = {waitUntil: 'networkidle0', timeout: 50000};
+		break;
+}
+
 const puppeteer = require('puppeteer');
 
 (async () => {
@@ -50,7 +70,7 @@ const puppeteer = require('puppeteer');
 	});
 	const page = await browser.newPage();
 	try {
-		await page.goto(targetUrl, {waitUntil: 'networkidle0', timeout: 10000});
+		await page.goto(targetUrl, downloadOptions);
 	} catch (e) {
 		console.error(e);
 	}
