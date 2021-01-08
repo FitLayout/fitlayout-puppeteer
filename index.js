@@ -184,7 +184,9 @@ const puppeteer = require('puppeteer');
 		"border-bottom",
 		"border-left",
 		"overflow",
-		"transform"
+		"transform",
+		"visibility",
+		"opacity"
 	];
 
 	const replacedElements = [
