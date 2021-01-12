@@ -1,10 +1,17 @@
-/*
- * Line detection in a displayed web page.
- * (c) 2020 Radek Burget <burgetr@fit.vutbr.cz>
+/**
+ * FitLayout puppetteer backend.
+ * (c) 2020-2021 Radek Burget <burgetr@fit.vutbr.cz>
  * 
+ * lines.js
+ * Text line detection in the target DOM.
  */
 
-function fitlayoutDetectLines() {
+/**
+ * Scans current DOM document and makes the following changes in the body:
+ * - All text nodes are wrapped in <XX> elements
+ * - Text lines are detected in text nodes and wrapped in separate <XL> elements.  
+ */
+ function fitlayoutDetectLines() {
 
 	var TEXT_CONT = "XX"; // element name to be used for wrapping the text nodes
 	var LINE_CONT = "XL"; // element name to be used for wrapping the detected lines

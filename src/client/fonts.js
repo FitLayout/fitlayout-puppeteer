@@ -1,7 +1,8 @@
 /*
  * fitlayout-puppeteer -- Puppeteer-based web page renderer for FitLayout
- * (c) Radek Burget 2020
+ * (c) Radek Burget 2020-2021
  *
+ * fonts.js
  * Font handling functions.
  */
 
