@@ -203,7 +203,13 @@ const puppeteer = require('puppeteer');
 
 	let nextId = 0;
 
-	function createBoxes(e, style, boxOffset, multipleBoxes) {
+	/**
+	 * Creates boxes for a single element.
+	 * @param {*} e 
+	 * @param {*} style 
+	 * @param {*} boxOffset 
+	 */
+	function createBoxes(e, style, boxOffset) {
 		e.fitlayoutID = []; //box IDs for the individual boxes
 		let rects = Array.from(e.getClientRects());
 		// find the lines
@@ -215,18 +221,7 @@ const puppeteer = require('puppeteer');
 			const rect = rects[i];
 			// detect line breaks
 			if (i > lineStart && rect.y != lastY) {
-				// compute the bounding box for the line boxes
-				const linebox = getSuperRect(rects.slice(lineStart, i));
-				if (!multipleBoxes || (linebox.width > 0 && linebox.height > 0)) {
-					// finish the line and create the box
-					let box = createBox(e, style, linebox, lineStart + boxOffset);
-					box.istart = lineStart;
-					box.iend = i;
-					ret.push(box);
-					for (let j = lineStart; j < i; j++) {
-						e.fitlayoutID.push(box.id);
-					}
-				}
+				createLineBox(e, style, rects, lineStart, i, boxOffset, ret);
 				// start the next line
 				lineStart = i;
 			}
@@ -234,19 +229,26 @@ const puppeteer = require('puppeteer');
 		}
 		//finish the last line
 		if (i > lineStart) {
-			const linebox = getSuperRect(rects.slice(lineStart, i));
-			if (!multipleBoxes || (linebox.width > 0 && linebox.height > 0)) {
-				let box = createBox(e, style, linebox, lineStart + boxOffset);
-				box.istart = lineStart;
-				box.iend = i;
-				ret.push(box);
-				for (let j = lineStart; j < i; j++) {
-					e.fitlayoutID.push(box.id);
-				}
-			}
+			createLineBox(e, style, rects, lineStart, i, boxOffset, ret);
 		}
 
 		return ret;
+	}
+
+	function createLineBox(e, style, rects, lineStart, lineEnd, boxOffset, ret)
+	{
+		// compute the bounding box for the line boxes
+		const linebox = getSuperRect(rects.slice(lineStart, lineEnd));
+		if (rects.length === 1 || (linebox.width > 0 && linebox.height > 0)) { //skip empty boxes in multi-rectangle elements
+			// finish the line and create the box
+			const box = createBox(e, style, linebox, lineStart + boxOffset);
+			box.istart = lineStart;
+			box.iend = lineEnd;
+			ret.push(box);
+			for (let j = lineStart; j < lineEnd; j++) {
+				e.fitlayoutID.push(box.id);
+			}
+		}
 	}
 
 	/**
@@ -429,12 +431,11 @@ const puppeteer = require('puppeteer');
 	function processBoxes(root, boxOffset, boxList, fontSet, imageList) {
 
 		if (isVisibleElement(root)) {
-			const multipleBoxes = (root.getClientRects().length > 1);
 			// get the style
 			const style = window.getComputedStyle(root, null);
 			addFonts(style, fontSet);
 			// generate boxes
-			const boxes = createBoxes(root, style, boxOffset, multipleBoxes);
+			const boxes = createBoxes(root, style, boxOffset);
 			if (boxes.length > 0 && isTextElem(root)) {
 				boxes[0].text = root.innerText;
 			}
@@ -456,6 +457,7 @@ const puppeteer = require('puppeteer');
 
 			if (!isReplacedElement(root)) //do not process the contents of replaced boxes
 			{
+				const multipleBoxes = (root.getClientRects().length > 1);
 				let ofs = 0;
 				const children = root.childNodes;
 				for (let i = 0; i < children.length; i++) {
