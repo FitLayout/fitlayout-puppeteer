@@ -30,7 +30,7 @@ function fitlayoutExportBoxes() {
 
 	let nextId = 0;
 
-	function createBoxes(e, style, boxOffset) {
+	function createBoxes(e, style, boxOffset, multipleBoxes) {
 		e.fitlayoutID = []; //box IDs for the individual boxes
 		let rects = Array.from(e.getClientRects());
 		// find the lines
@@ -42,27 +42,34 @@ function fitlayoutExportBoxes() {
 			const rect = rects[i];
 			// detect line breaks
 			if (i > lineStart && rect.y != lastY) {
-				// finish the line and create the box
-				let box = createBox(e, style, rects.slice(lineStart, i), lineStart + boxOffset);
-				box.istart = lineStart;
-				box.iend = i;
-				ret.push(box);
-				for (let j = lineStart; j < i; j++) {
-					e.fitlayoutID.push(box.id);
+				// compute the bounding box for the line boxes
+				const linebox = getSuperRect(rects.slice(lineStart, i));
+				if (!multipleBoxes || (linebox.width > 0 && linebox.height > 0)) {
+					// finish the line and create the box
+					let box = createBox(e, style, linebox, lineStart + boxOffset);
+					box.istart = lineStart;
+					box.iend = i;
+					ret.push(box);
+					for (let j = lineStart; j < i; j++) {
+						e.fitlayoutID.push(box.id);
+					}
 				}
-				// start next line
+				// start the next line
 				lineStart = i;
 			}
 			lastY = rect.y;
 		}
 		//finish the last line
 		if (i > lineStart) {
-			let box = createBox(e, style, rects.slice(lineStart, i), lineStart + boxOffset);
-			box.istart = lineStart;
-			box.iend = i;
-			ret.push(box);
-			for (let j = lineStart; j < i; j++) {
-				e.fitlayoutID.push(box.id);
+			const linebox = getSuperRect(rects.slice(lineStart, i));
+			if (!multipleBoxes || (linebox.width > 0 && linebox.height > 0)) {
+				let box = createBox(e, style, linebox, lineStart + boxOffset);
+				box.istart = lineStart;
+				box.iend = i;
+				ret.push(box);
+				for (let j = lineStart; j < i; j++) {
+					e.fitlayoutID.push(box.id);
+				}
 			}
 		}
 
@@ -73,14 +80,13 @@ function fitlayoutExportBoxes() {
 	 * 
 	 * @param {*} e 
 	 * @param {*} style 
-	 * @param {*} rects 
+	 * @param {*} srect bounding 'super rectangle' of the rectangles that should be considered 
 	 * @param {*} boxIndex the index of the first rectangle within the parent node
 	 */
-	function createBox(e, style, rects, boxIndex) {
+	function createBox(e, style, srect, boxIndex) {
 		let ret = {};
 		ret.id = nextId++;
 		ret.tagName = e.tagName;
-		let srect = getSuperRect(rects);
 		ret.x = srect.x;
 		ret.y = srect.y;
 		ret.width = srect.width;
@@ -250,12 +256,13 @@ function fitlayoutExportBoxes() {
 	function processBoxes(root, boxOffset, boxList, fontSet, imageList) {
 
 		if (isVisibleElement(root)) {
+			const multipleBoxes = (root.getClientRects().length > 1);
 			// get the style
 			const style = window.getComputedStyle(root, null);
 			addFonts(style, fontSet);
 			// generate boxes
-			const boxes = createBoxes(root, style, boxOffset);
-			if (isTextElem(root)) {
+			const boxes = createBoxes(root, style, boxOffset, multipleBoxes);
+			if (boxes.length > 0 && isTextElem(root)) {
 				boxes[0].text = root.innerText;
 			}
 			for (box of boxes) {
@@ -276,7 +283,6 @@ function fitlayoutExportBoxes() {
 
 			if (!isReplacedElement(root)) //do not process the contents of replaced boxes
 			{
-				const multipleBoxes = (root.getClientRects().length > 1);
 				let ofs = 0;
 				const children = root.childNodes;
 				for (let i = 0; i < children.length; i++) {
