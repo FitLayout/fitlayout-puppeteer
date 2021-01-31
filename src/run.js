@@ -65,7 +65,7 @@ const puppeteer = require('puppeteer');
 	const browser = await puppeteer.launch({
 		headless: true,
 		//slowMo: 250,
-		args: [`--window-size=${wwidth},${wheight}`],
+		args: [`--window-size=${wwidth},${wheight}`, '--no-sandbox'], //we assume running in docker
 		defaultViewport: null
 	});
 	const page = await browser.newPage();
