@@ -14,22 +14,42 @@ const argv = require('yargs/yargs')(process.argv.slice(2))
     .nargs('W', 1)
 	.default('W', 1200)
 	.describe('W', 'Target page width')
+
     .alias('H', 'height')
     .nargs('H', 1)
 	.default('H', 800)
 	.describe('H', 'Target page height')
+
 	.alias('P', 'persistence')
 	.nargs('P', 1)
 	.default('P', 1)
 	.describe('P', 'Content downloading persistence: 0 (quick), 1 (standard), 2 (wait longer), 3 (get as much as possible)')
+
 	.alias('s', 'screenshot')
 	.boolean('s')
 	.default('s', false)
 	.describe('s', 'Include a screenshot in the result')
+
 	.alias('I', 'download-images')
 	.boolean('I')
 	.default('I', false)
 	.describe('I', 'Download all contained images referenced in <img> elements')
+
+	.alias('N', 'no-headless')
+	.boolean('N')
+	.default('N', false)
+	.describe('N', 'Do not use headless mode; show the browser in foreground')
+
+	.alias('C', 'no-close')
+	.boolean('C')
+	.default('C', false)
+	.describe('C', 'Do not close the browser after the operation')
+
+	.alias('d', 'user-dir')
+	.nargs('d', 1)
+	.default('d', '')
+	.describe('d', 'Browser profile directory to be used (default location is used when not specified)')
+
     .help('h')
     .alias('h', 'help')
     .argv;
@@ -62,12 +82,22 @@ switch (argv.P) {
 const puppeteer = require('puppeteer');
 
 (async () => {
-	const browser = await puppeteer.launch({
+
+	const options = {
 		headless: true,
 		//slowMo: 250,
 		args: [`--window-size=${wwidth},${wheight}`, '--no-sandbox'], //we assume running in docker
+		ignoreDefaultArgs: ['--disable-extensions'], //allow to extensions
 		defaultViewport: null
-	});
+	};
+	if (argv.N) {
+		options.headless = false;
+	}
+	if (argv.d !== '') {
+		options.userDataDir = argv.d;
+	}
+
+	const browser = await puppeteer.launch(options);
 	const page = await browser.newPage();
 	try {
 		await page.goto(targetUrl, downloadOptions);
@@ -136,7 +166,9 @@ const puppeteer = require('puppeteer');
 		}
 	}
 
-	await browser.close();
+	if (!argv.C) {
+		await browser.close();
+	}
 
 	process.stdout.write(JSON.stringify(pg));
 
