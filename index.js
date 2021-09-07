@@ -7,6 +7,30 @@
  * parsed by fitlayout-render-puppeteer.
  */
 
+async function scrollDown(page, maxIterations) {
+    return await page.evaluate(async () => {
+        let totalHeight = 0;
+        await new Promise((resolve, reject) => {
+			let iteration = 0;
+			const distance = window.innerHeight / 2;
+            var timer = setInterval(() => {
+                const scrollHeight = document.body.scrollHeight;
+                window.scrollBy({top: distance, left: 0, behavior: 'auto'});
+				totalHeight += distance;
+				iteration++;
+
+                if (totalHeight >= scrollHeight || iteration > maxIterations) {
+					totalHeight = scrollHeight; // for returning the maximal height in all cases
+					window.scrollTo({top: 0, left: 0, behavior: 'auto'});
+                    clearInterval(timer);
+                    resolve();
+                }
+            }, 100);
+		});
+		return totalHeight;
+    });
+}
+
 const argv = require('yargs/yargs')(process.argv.slice(2))
     .usage('Usage: $0 [options] <url>')
 	//.example('$0 -W 1200 -H 800 http://cssbox.sf.net', '')
@@ -64,19 +88,21 @@ const targetUrl = argv._[0];
 const wwidth = argv.width;
 const wheight = argv.height;
 
-let downloadOptions = {};
+let waitOptions = {};
+let scrollPages = 20;
 switch (argv.P) {
 	case 0:
-		downloadOptions = {waitUntil: 'domcontentloaded', timeout: 10000};
+		waitOptions = {waitUntil: 'domcontentloaded', timeout: 10000};
+		scrollPages = 1;
 		break;
 	case 1:
-		downloadOptions = {waitUntil: 'load', timeout: 15000};
+		waitOptions = {waitUntil: 'load', timeout: 15000};
 		break;
 	case 2:
-		downloadOptions = {waitUntil: 'networkidle2', timeout: 15000};
+		waitOptions = {waitUntil: 'networkidle2', timeout: 15000};
 		break;
 	default:
-		downloadOptions = {waitUntil: 'networkidle0', timeout: 50000};
+		waitOptions = {waitUntil: 'networkidle0', timeout: 50000};
 		break;
 }
 
@@ -101,7 +127,10 @@ const puppeteer = require('puppeteer');
 	const browser = await puppeteer.launch(options);
 	const page = await browser.newPage();
 	try {
-		await page.goto(targetUrl, downloadOptions);
+		await page.goto(targetUrl, waitOptions);
+		let totalHeight = await scrollDown(page, scrollPages);
+		await page.setViewport({width: wwidth, height: totalHeight, deviceScaleFactor: 1});
+		//await page.waitForNavigation(waitOptions);
 	} catch (e) {
 		console.error(e);
 	}
