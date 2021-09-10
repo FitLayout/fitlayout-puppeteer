@@ -12,7 +12,7 @@ async function scrollDown(page, maxIterations) {
         let totalHeight = 0;
         await new Promise((resolve, reject) => {
 			let iteration = 0;
-			const distance = window.innerHeight / 2;
+			const distance = window.innerHeight / 2; // div 2 is for scrolling slower and let everything load
             var timer = setInterval(() => {
                 const scrollHeight = document.body.scrollHeight;
                 window.scrollBy({top: distance, left: 0, behavior: 'auto'});
