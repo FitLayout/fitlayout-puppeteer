@@ -123,8 +123,15 @@ const puppeteer = require('puppeteer');
 		options.userDataDir = argv.d;
 	}
 
+	let lastResponse = null;
+	let lastError = null;
 	const browser = await puppeteer.launch(options);
 	const page = await browser.newPage();
+	//store the last http response
+    page.on('response', resp => {
+		lastResponse = resp;
+    });
+	//go to the page
 	try {
 		await page.goto(targetUrl, waitOptions);
 		let totalHeight = await scrollDown(page, scrollPages);
@@ -132,6 +139,7 @@ const puppeteer = require('puppeteer');
 		//await page.waitForNavigation(waitOptions);
 	} catch (e) {
 		console.error(e);
+		lastError = e;
 	}
 	//page.on('console', msg => console.log('PAGE LOG:', msg.text() + '\n'));
 
@@ -197,6 +205,14 @@ const puppeteer = require('puppeteer');
 
 	if (!argv.C) {
 		await browser.close();
+	}
+
+	if (lastResponse) {
+		pg.status = lastResponse._status;
+		pg.statusText = lastResponse._statusText;
+	}
+	if (lastError) {
+		pg.error = lastError.toString();
 	}
 
 	process.stdout.write(JSON.stringify(pg));
