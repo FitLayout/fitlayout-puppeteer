@@ -107,6 +107,7 @@ switch (argv.P) {
 }
 
 const puppeteer = require('puppeteer');
+const fs = require('fs');
 
 (async () => {
 
@@ -124,8 +125,24 @@ const puppeteer = require('puppeteer');
 		options.userDataDir = argv.d;
 	}
 
+	//load extensions from the 'extensions' folder if provided
+	let exts = [];
+	await new Promise(done => fs.readdir('extensions', (err, files) => {
+		if (!err) {
+			for (let file of files) {
+				exts.push('extensions/' + file);
+			} 
+		}
+		done(); 
+	}));
+	if (exts && exts.length > 0) {
+		options.args.push('--load-extension=' + exts.join());
+	}
+
+	//launch the browser
 	let lastResponse = null;
 	let lastError = null;
+	console.error(options);
 	const browser = await puppeteer.launch(options);
 	const page = await browser.newPage();
 	//store the last http response
