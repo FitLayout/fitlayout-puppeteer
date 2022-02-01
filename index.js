@@ -142,7 +142,6 @@ const fs = require('fs');
 	//launch the browser
 	let lastResponse = null;
 	let lastError = null;
-	console.error(options);
 	const browser = await puppeteer.launch(options);
 	const page = await browser.newPage();
 	//store the last http response
