@@ -7,6 +7,8 @@
  * parsed by fitlayout-render-puppeteer.
  */
 
+const EVAL_TIMEOUT = 30; // timeout for page script evaluation in seconds
+
 async function scrollDown(page, maxIterations) {
     return await page.evaluate(async () => {
         let totalHeight = 0;
@@ -151,8 +153,8 @@ const puppeteer = require('puppeteer');
 		encoding: "base64"
 	});
 
-	//produce the box tree
-	let pg = await page.evaluate(() => {
+	// a task that produces the page tree
+	let pageTask = page.evaluate(() => {
 
 		/*=client.js=*/
 ﻿﻿/**
@@ -760,8 +762,15 @@ function disableCSSFonts() {
 
 		fitlayoutDetectLines();
 		return fitlayoutExportBoxes();
-
 	});
+	// the timer that completes after 1 minute (to interrupt evaluation)
+	let timerId = 0;
+	let timerTask = new Promise((resolve, reject) => {
+		  timerId = setTimeout(resolve, EVAL_TIMEOUT * 1000, {error: 'Evaluation timeout'});
+	});
+	// wait for evaluation to complete
+	let pg = await Promise.race([pageTask, timerTask]);
+	clearTimeout(timerId);
 
 	// add a screenshot if it was required
 	if (argv.s && screenShot !== null) {
