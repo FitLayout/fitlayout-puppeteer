@@ -111,6 +111,7 @@ function fitlayoutExportBoxes() {
 	function createBox(e, style, srect, boxIndex) {
 		let ret = {};
 		ret.id = nextId++;
+		ret.xpath = e.FLXPath;
 		ret.tagName = e.tagName;
 		ret.x = srect.x;
 		ret.y = srect.y;

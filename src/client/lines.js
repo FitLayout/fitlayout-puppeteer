@@ -16,6 +16,25 @@
 	var TEXT_CONT = "XX"; // element name to be used for wrapping the text nodes
 	var LINE_CONT = "XL"; // element name to be used for wrapping the detected lines
 
+	function markXPaths(root, rootXPath) {
+		root.FLXPath = rootXPath;
+		const children = root.childNodes;
+		let elemCnt = 0;
+		let textCnt = 0;
+		for (let i = 0; i < children.length; i++) {
+			const child = children[i];
+			let xstep = '';
+			if (child.nodeType === Node.ELEMENT_NODE) {
+				elemCnt++;
+				xstep = '*[' + elemCnt + ']';
+			} else if (child.nodeType === Node.TEXT_NODE) {
+				textCnt++;
+				xstep = 'text()[' + textCnt + ']';
+			}
+			markXPaths(child, rootXPath + '/' + xstep);
+		}
+	}
+
 	/**
 	 * Finds lines in a given XX element and marks them with separate elements.
 	 * @param {Element} xx the XX element to be processed.
@@ -65,6 +84,7 @@
 		for (var i = 0; i < breaks.length - 1; i++) {
 			var subtext = text.substring(breaks[i], breaks[i + 1]);
 			var line = document.createElement(LINE_CONT);
+			line.FLXPath = parent.FLXPath;
 			line.appendChild(document.createTextNode(subtext));
 			lines.push(line);
 		}
@@ -91,6 +111,7 @@
 			var child = children.item(i);
 			if (child.nodeType == Node.TEXT_NODE && (isMulti || child.nodeValue.trim().length > 0)) {
 				var newchild = document.createElement(TEXT_CONT);
+				newchild.FLXPath = p.FLXPath + '/node()[' + (i + 1) +']';
 				newchild.appendChild(document.createTextNode(child.nodeValue));
 				replace.push(newchild);
 			} else {
@@ -116,6 +137,7 @@
 		}
 	}
 
+	markXPaths(document.body, '//body[1]');
 	unmix(document.body);
 	var xxs = Array.from(document.getElementsByTagName(TEXT_CONT));
 	for (var i = 0; i < xxs.length; i++) {
