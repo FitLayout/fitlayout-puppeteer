@@ -7,7 +7,7 @@ Puppeteer-based web page renderer backend for FitLayout. It uses [puppeteer](htt
 
 ## Requirements
 
-`Node.js` version 14 or greater and `npm` version 6 or later are required for installing the package.
+`Node.js` version 14 or greater and `npm` version 6 or later are required for installing the package. For Windows, WSL is required.
 
 ## Installation
 
