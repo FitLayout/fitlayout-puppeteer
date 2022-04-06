@@ -353,6 +353,8 @@ function fitlayoutExportBoxes() {
 	let fonts = new Set();
 	processBoxes(document.body, 0, boxes, fonts, images);
 
+	let metadata = extractJsonLd(document);
+
 	let ret = {
 		page: {
 			width: document.body.scrollWidth,
@@ -362,7 +364,8 @@ function fitlayoutExportBoxes() {
 		},
 		fonts: getExistingFonts(fonts),
 		boxes: boxes,
-		images: images
+		images: images,
+		metadata: metadata
 	}
 
 	return ret;

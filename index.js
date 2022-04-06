@@ -612,6 +612,8 @@ function fitlayoutExportBoxes() {
 	let fonts = new Set();
 	processBoxes(document.body, 0, boxes, fonts, images);
 
+	let metadata = extractJsonLd(document);
+
 	let ret = {
 		page: {
 			width: document.body.scrollWidth,
@@ -621,7 +623,8 @@ function fitlayoutExportBoxes() {
 		},
 		fonts: getExistingFonts(fonts),
 		boxes: boxes,
-		images: images
+		images: images,
+		metadata: metadata
 	}
 
 	return ret;
@@ -649,6 +652,27 @@ function disableCSSFonts() {
 		} 
 	}
 }
+/*
+ * FitLayout puppetteer backend.
+ * (c) 2020-2022 Radek Burget <burgetr@fit.vutbr.cz>
+ * 
+ * jsonld.js
+ * JSON-LD metadata extraction
+ */
+
+ function extractJsonLd(document) {
+
+	let ret = [];
+	let list = document.querySelectorAll("script[type='application/ld+json']");
+	for (let item of list) {
+		ret.push({
+			type: 'application/ld+json',
+			content: item.textContent
+		});
+	}
+	return ret;
+
+ }
 /**
  * FitLayout puppetteer backend.
  * (c) 2020-2021 Radek Burget <burgetr@fit.vutbr.cz>
