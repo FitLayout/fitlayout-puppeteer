@@ -19,7 +19,7 @@
   },
   "homepage": "https://github.com/FitLayout/fitlayout-puppeteer#readme",
   "dependencies": {
-    "puppeteer": "^10.2.0",
+    "puppeteer": "^19.1.0",
     "yargs": "^16.2.0"
   }
 }
