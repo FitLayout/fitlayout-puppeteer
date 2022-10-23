@@ -147,7 +147,7 @@ const fs = require('fs');
 	const browser = await puppeteer.launch(options);
 	const page = await browser.newPage();
 	//store the last http response
-    page.on('response', resp => {
+    page.on('response', async resp => {
 		lastResponse = resp;
     });
 	//go to the page
@@ -883,8 +883,8 @@ function disableCSSFonts() {
 	}
 
 	if (lastResponse) {
-		pg.status = lastResponse._status;
-		pg.statusText = lastResponse._statusText;
+		pg.status = lastResponse.status();
+		pg.statusText = lastResponse.statusText();
 	}
 	if (lastError) {
 		pg.error = lastError.toString();
