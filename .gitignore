@@ -11,5 +11,4 @@ tmp/**
 node_modules/
 .sass-cache
 dist/*.map
-extensions/
-extensions.old/
+extensions*/
