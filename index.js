@@ -95,10 +95,11 @@ let scrollPages = 20;
 switch (argv.P) {
 	case 0:
 		waitOptions = {waitUntil: 'domcontentloaded', timeout: 10000};
-		scrollPages = 1;
+		scrollPages = 0;
 		break;
 	case 1:
 		waitOptions = {waitUntil: 'load', timeout: 15000};
+		scrollPages = 5;
 		break;
 	case 2:
 		waitOptions = {waitUntil: 'networkidle2', timeout: 15000};
@@ -153,7 +154,12 @@ const fs = require('fs');
 	//go to the page
 	try {
 		await page.goto(targetUrl, waitOptions);
-		let totalHeight = await scrollDown(page, scrollPages);
+		// try total height as 2 window heights to make sure that everything is displayed correctly above the fold
+		let totalHeight = wheight * 2;
+		// if scrolling is enabled, scroll and update the total height
+		if (scrollPages > 0) {
+			totalHeight = await scrollDown(page, scrollPages);
+		}
 		await page.setViewport({width: wwidth, height: totalHeight, deviceScaleFactor: 1});
 		//await page.waitForNavigation(waitOptions);
 	} catch (e) {
