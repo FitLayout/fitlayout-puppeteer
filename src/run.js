@@ -116,7 +116,7 @@ const fs = require('fs');
 	const options = {
 		headless: true,
 		//slowMo: 250,
-		args: [`--window-size=${wwidth},${wheight}`, '--no-sandbox'], //we assume running in docker
+		args: [`--window-size=${wwidth},${wheight}`, '--no-sandbox', '--disable-web-security'], //we assume running in docker
 		ignoreDefaultArgs: ['--disable-extensions'], //allow to extensions
 		defaultViewport: null
 	};
