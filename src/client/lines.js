@@ -57,25 +57,34 @@
 
 	/**
 	 * Splits the text content of a given element based on the client rectangles.
-	 * 
-	 * @param {Element} parent the parent element of the text node 
-	 * @param {string} text the text content to be split 
-	 * @param {*} rects element client rectangles to be used for splitting 
+	 *
+	 * @param {Element} parent the parent element of the text node
+	 * @param {string} text the text content to be split
+	 * @param {*} rects element client rectangles to be used for splitting
 	 */
 	function splitTextByLines(parent, text, rects) {
+		
+		function getCaretOffset(x, y) {
+			if (document.caretPositionFromPoint) {
+				// W3C standard (Firefox, Chrome 128+)
+				const pos = document.caretPositionFromPoint(x, y);
+				return pos ? pos.offset : null;
+			} else if (document.caretRangeFromPoint) {
+				// Non-standard fallback (Chrome/Safari)
+				const range = document.caretRangeFromPoint(x, y);
+				return range ? range.startOffset : null;
+			}
+			return null;
+		}
+
 		var breaks = [];
-		var lastY = 0;
+		var lastY = -Infinity;
 		for (var i = 0; i < rects.length; i++) {
 			var rect = rects[i];
-			// TODO this is Chrome-specific; use caretPositionFromPoint in other browsers
-			var range = document.caretRangeFromPoint(rect.x + 1, rect.y + rect.height / 2); //use +1 to be sure to hit some position
-			if (range) {
-				var ofs = range.startOffset;
-				// detect line breaks
-				if (i == 0 || rect.y != lastY) {
-					breaks.push(ofs);
-					lastY = rect.y;
-				}
+			var ofs = getCaretOffset(rect.x + 1, rect.y + rect.height / 2);
+			if (ofs !== null && rect.y !== lastY) {
+				breaks.push(ofs);
+				lastY = rect.y;
 			}
 		}
 		breaks.push(text.length);
